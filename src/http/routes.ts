@@ -58,7 +58,10 @@ router.post('/remote-start', async (req: Request, res: Response) => {
   try {
     const is16 = client.protocol === 'ocpp1.6';
     const result = is16
-      ? await client.call('RemoteStartTransaction', { idTag, connectorId })
+      ? await client.call('RemoteStartTransaction', {
+          idTag,
+          connectorId: connectorId ?? 1,
+        })
       : await client.call('RequestStartTransaction', {
           idToken: { idToken: idTag, type: 'Central' },
           ...(connectorId != null && { evseId: connectorId }),
