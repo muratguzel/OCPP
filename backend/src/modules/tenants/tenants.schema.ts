@@ -5,7 +5,8 @@ export const createTenantSchema = z.object({
 });
 
 export const updateTenantSchema = z.object({
-  name: z.string().min(1, "Name is required").max(255),
+  name: z.string().min(1, "Name is required").max(255).optional(),
+  isSuspended: z.boolean().optional(),
 });
 
 export type CreateTenantInput = z.infer<typeof createTenantSchema>;

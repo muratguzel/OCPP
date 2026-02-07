@@ -9,6 +9,7 @@ export async function listTenants() {
     columns: {
       id: true,
       name: true,
+      isSuspended: true,
       createdAt: true,
       updatedAt: true,
     },
@@ -40,12 +41,13 @@ export async function createTenant(input: CreateTenantInput) {
 }
 
 export async function updateTenant(id: string, input: UpdateTenantInput) {
+  const updateData: Record<string, unknown> = { updatedAt: new Date() };
+  if (input.name !== undefined) updateData.name = input.name;
+  if (input.isSuspended !== undefined) updateData.isSuspended = input.isSuspended;
+
   const [updated] = await db
     .update(tenants)
-    .set({
-      name: input.name,
-      updatedAt: new Date(),
-    })
+    .set(updateData)
     .where(eq(tenants.id, id))
     .returning();
 

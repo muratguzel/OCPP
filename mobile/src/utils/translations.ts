@@ -9,6 +9,9 @@ export const translations = {
     password: 'Şifre',
     login: 'Giriş Yap',
     forgotPassword: 'Şifremi Unuttum?',
+    loginErrorRequired: 'E-posta ve şifre gerekli',
+    loginErrorInvalid: 'Geçersiz e-posta veya şifre',
+    loginErrorSession: 'Oturum süresi doldu. Tekrar giriş yapın.',
     
     // QR Scanner Screen
     scanQR: 'QR Kod Okut',
@@ -65,6 +68,9 @@ export const translations = {
     password: 'Password',
     login: 'Login',
     forgotPassword: 'Forgot Password?',
+    loginErrorRequired: 'Email and password required',
+    loginErrorInvalid: 'Invalid email or password',
+    loginErrorSession: 'Session expired. Please log in again.',
     
     // QR Scanner Screen
     scanQR: 'Scan QR Code',
@@ -121,6 +127,9 @@ export const translations = {
     password: 'Passwort',
     login: 'Anmelden',
     forgotPassword: 'Passwort vergessen?',
+    loginErrorRequired: 'E-Mail und Passwort erforderlich',
+    loginErrorInvalid: 'Ungültige E-Mail oder Passwort',
+    loginErrorSession: 'Sitzung abgelaufen. Bitte erneut anmelden.',
     
     // QR Scanner Screen
     scanQR: 'QR-Code scannen',
@@ -177,6 +186,9 @@ export const translations = {
     password: 'Mot de passe',
     login: 'Connexion',
     forgotPassword: 'Mot de passe oublié?',
+    loginErrorRequired: 'E-mail et mot de passe requis',
+    loginErrorInvalid: 'E-mail ou mot de passe invalide',
+    loginErrorSession: 'Session expirée. Veuillez vous reconnecter.',
     
     // QR Scanner Screen
     scanQR: 'Scanner le code QR',
@@ -233,6 +245,9 @@ export const translations = {
     password: 'كلمة المرور',
     login: 'تسجيل الدخول',
     forgotPassword: 'نسيت كلمة المرور؟',
+    loginErrorRequired: 'البريد الإلكتروني وكلمة المرور مطلوبان',
+    loginErrorInvalid: 'البريد الإلكتروني أو كلمة المرور غير صالحة',
+    loginErrorSession: 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.',
     
     // QR Scanner Screen
     scanQR: 'مسح رمز الاستجابة السريعة',

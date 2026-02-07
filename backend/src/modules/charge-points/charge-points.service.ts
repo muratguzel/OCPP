@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "../../config/database.js";
 import { chargePoints, tenants } from "../../config/schema.js";
 import { AppError } from "../../middleware/errorHandler.js";
@@ -14,6 +14,10 @@ const listColumns = {
   tenantId: true,
   chargePointId: true,
   name: true,
+  connectorType: true,
+  maxPower: true,
+  latitude: true,
+  longitude: true,
   isActive: true,
   createdAt: true,
   updatedAt: true,
@@ -44,6 +48,18 @@ export async function listChargePoints(
   }
 
   throw new AppError(403, "Insufficient permissions");
+}
+
+/** Internal: Look up charge point by OCPP chargePointId (case-insensitive). Used by charge module. */
+export async function getChargePointByChargePointId(
+  chargePointId: string
+) {
+  const [cp] = await db
+    .select()
+    .from(chargePoints)
+    .where(sql`lower(${chargePoints.chargePointId}) = lower(${chargePointId})`)
+    .limit(1);
+  return cp ?? null;
 }
 
 export async function getChargePointById(
@@ -97,6 +113,10 @@ export async function createChargePoint(
       tenantId: input.tenantId,
       chargePointId: input.chargePointId,
       name: input.name ?? null,
+      connectorType: input.connectorType ?? null,
+      maxPower: input.maxPower ?? null,
+      latitude: input.latitude?.toString() ?? null,
+      longitude: input.longitude?.toString() ?? null,
     })
     .returning();
 
@@ -125,6 +145,10 @@ export async function updateChargePoint(
   const updateData: Record<string, unknown> = { updatedAt: new Date() };
   if (input.name !== undefined) updateData.name = input.name;
   if (input.isActive !== undefined) updateData.isActive = input.isActive;
+  if (input.connectorType !== undefined) updateData.connectorType = input.connectorType;
+  if (input.maxPower !== undefined) updateData.maxPower = input.maxPower;
+  if (input.latitude !== undefined) updateData.latitude = input.latitude?.toString();
+  if (input.longitude !== undefined) updateData.longitude = input.longitude?.toString();
 
   const [updated] = await db
     .update(chargePoints)

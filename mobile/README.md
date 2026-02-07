@@ -25,7 +25,7 @@ Ardından iOS simülatör, Android emülatör veya fiziksel cihazda açın. Fizi
 
 ## Akış
 
-1. **Login** – İşlevsiz; "Giriş Yap" ile bir sonraki ekrana geçilir (auth sonradan eklenecek).
+1. **Login** – E-posta ve şifre ile backend API (`POST /api/auth/login`) üzerinden giriş. Token AsyncStorage'da saklanır. Giriş sonrası QR ekranına geçilir.
 2. **QR** – "QR Kod Okut" ile istasyon listesi ekranına geçilir (kamera/okuma yok).
 3. **İstasyon listesi** – `GET /charge-points` ile bağlı istasyonlar listelenir; seçip "Şarjı Başlat" ile `POST /remote-start` çağrılır.
 4. **Şarj aktif** – `GET .../transactions` ile aktif transaction alınır, `GET .../meters` periyodik okunur; "Şarjı Durdur" ile onay sonrası `POST /remote-stop`, ardından özet ekranı.

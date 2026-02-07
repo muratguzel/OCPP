@@ -43,6 +43,7 @@ services:
       NODE_ENV: development
       DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sarjmodul
       REDIS_URL: redis://redis:6379
+      OCPP_GATEWAY_URL: http://ocpp-gateway:3000
       JWT_SECRET: dev-jwt-secret-change-in-production-min16
       JWT_REFRESH_SECRET: dev-jwt-refresh-secret-change-in-production-min16
       SEED_EMAIL: admin@sarjmodul.com
@@ -70,6 +71,19 @@ services:
       BACKEND_API_URL: http://backend:3000
     volumes:
       - ./ocpp-gateway/src:/app/src
+    depends_on:
+      - backend
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_OCPP_GATEWAY_URL: http://localhost:3000
+    restart: unless-stopped
+    ports:
+      - "5173:80"
     depends_on:
       - backend
 

@@ -519,6 +519,67 @@ Validation hatalarında yanıt örneği:
 
 ---
 
+---
+
+## Stats
+
+Sadece **Super Admin** ve **Admin** erişebilir. **Super Admin** global, **Admin** tenant kapsamında istatistik görür.
+
+### GET /api/stats/overview
+
+Özet istatistikler: tenant sayısı, charge point sayısı, toplam kWh, toplam gelir.
+
+```bash
+curl -s http://localhost:4000/api/stats/overview \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+### GET /api/stats/usage
+
+Kullanım verisi (günlük/haftalık).
+
+**Query:** `period=day|week`, `tenantId=uuid` (sadece Super Admin)
+
+```bash
+curl -s "http://localhost:4000/api/stats/usage?period=week" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+---
+
+## Charge (Mobil şarj başlatma)
+
+Sadece giriş yapmış kullanıcılar şarj başlatabilir. `idTag` olarak kullanıcı ID'si (UUID) kullanılır; transaction kaydı gateway webhook ile backend'e aktarılır.
+
+### POST /api/charge/start
+
+Uzak şarj başlatma. Backend gateway'e `remote-start` gönderir, CP'den StartTransaction geldiğinde transaction backend'e yazılır (userId ile).
+
+**Headers:** `Authorization: Bearer <access_token>`  
+**Body:** `{ chargePointId: string, connectorId?: number }` (connectorId varsayılan 1)
+
+```bash
+curl -s -X POST http://localhost:4000/api/charge/start \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"chargePointId":"CP001","connectorId":1}'
+```
+
+---
+
+## Transactions
+
+Şarj geçmişi. **User** kendi işlemlerini, **Admin** tenant’ınkileri, **Super Admin** tümünü görür.
+
+### GET /api/transactions
+
+```bash
+curl -s http://localhost:4000/api/transactions \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+---
+
 ## Özet tablo
 
 | Method | Endpoint | Auth | Rol |
@@ -543,3 +604,7 @@ Validation hatalarında yanıt örneği:
 | POST | /api/charge-points | Evet | super_admin, admin |
 | PATCH | /api/charge-points/:id | Evet | super_admin, admin |
 | DELETE | /api/charge-points/:id | Evet | super_admin, admin |
+| GET | /api/stats/overview | Evet | super_admin, admin |
+| GET | /api/stats/usage | Evet | super_admin, admin |
+| POST | /api/charge/start | Evet | super_admin, admin, user |
+| GET | /api/transactions | Evet | super_admin, admin, user |

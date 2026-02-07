@@ -13,7 +13,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSelector } from '../components/LanguageSelector';
-import { getChargePoints, remoteStart, type ChargePoint } from '../api/ocppGateway';
+import { getChargePoints, type ChargePoint } from '../api/ocppGateway';
+import { startCharge } from '../api/backendApi';
 import { OCPP_GATEWAY_URL } from '../constants/config';
 import type { RootStackParamList } from '../types/navigation';
 
@@ -53,7 +54,7 @@ export const ChargingStartScreen: React.FC = () => {
     setStarting(true);
     setError(null);
     try {
-      const res = await remoteStart({ chargePointId: selectedId });
+      const res = await startCharge({ chargePointId: selectedId, connectorId: 1 });
       if (res.success) {
         navigation.navigate('ChargingActive', { chargePointId: selectedId });
       } else {

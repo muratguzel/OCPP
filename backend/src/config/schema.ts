@@ -5,13 +5,17 @@ import {
   pgEnum,
   boolean,
   timestamp,
+  integer,
+  decimal,
 } from "drizzle-orm/pg-core";
+import { relations } from "drizzle-orm";
 
 export const roleEnum = pgEnum("role", ["super_admin", "admin", "user"]);
 
 export const tenants = pgTable("tenants", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  isSuspended: boolean("is_suspended").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -42,6 +46,10 @@ export const chargePoints = pgTable("charge_points", {
   tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   chargePointId: varchar("charge_point_id", { length: 255 }).notNull().unique(),
   name: varchar("name", { length: 255 }),
+  connectorType: varchar("connector_type", { length: 50 }),
+  maxPower: integer("max_power"),
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -49,3 +57,34 @@ export const chargePoints = pgTable("charge_points", {
 
 export type ChargePoint = typeof chargePoints.$inferSelect;
 export type NewChargePoint = typeof chargePoints.$inferInsert;
+
+export const transactions = pgTable("transactions", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  ocppTransactionId: varchar("ocpp_transaction_id", { length: 50 }),
+  chargePointId: varchar("charge_point_id", { length: 255 }).notNull(),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
+  userId: uuid("user_id").references((): any => users.id, { onDelete: "set null" }),
+  connectorId: integer("connector_id").notNull(),
+  idTag: varchar("id_tag", { length: 255 }).notNull(),
+  meterStart: integer("meter_start"),
+  meterStop: integer("meter_stop"),
+  kwh: decimal("kwh", { precision: 10, scale: 2 }),
+  cost: decimal("cost", { precision: 10, scale: 2 }),
+  startTime: timestamp("start_time").notNull(),
+  endTime: timestamp("end_time"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export type Transaction = typeof transactions.$inferSelect;
+export type NewTransaction = typeof transactions.$inferInsert;
+
+export const transactionsRelations = relations(transactions, ({ one }) => ({
+  user: one(users, {
+    fields: [transactions.userId],
+    references: [users.id],
+  }),
+}));
+
+export const usersRelations = relations(users, ({ many }) => ({
+  transactions: many(transactions),
+}));

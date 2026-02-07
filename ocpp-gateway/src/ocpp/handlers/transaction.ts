@@ -1,5 +1,6 @@
 /**
  * StartTransaction, StopTransaction (OCPP 1.6) and TransactionEvent (OCPP 2.x)
+ * Notifies backend webhook for transaction persistence (userId tracking).
  */
 import {
   saveTransaction,
@@ -7,6 +8,7 @@ import {
   generateTransactionId,
   updateTransactionMeter,
 } from '../../store/chargePoints.js';
+import { notifyTransactionStarted, notifyTransactionStopped } from '../../backend/client.js';
 
 // --- OCPP 1.6 ---
 type StartTransactionParams = {
@@ -21,13 +23,22 @@ export function startTransaction(params: StartTransactionParams, chargePointId: 
   transactionId: number;
 } {
   const transactionId = generateTransactionId();
+  const startTime = params.timestamp ?? new Date().toISOString();
   saveTransaction(chargePointId, {
     transactionId,
     chargePointId,
     connectorId: params.connectorId,
     idTag: params.idTag,
     meterStart: params.meterStart,
-    startTime: params.timestamp ?? new Date().toISOString(),
+    startTime,
+  });
+  notifyTransactionStarted({
+    chargePointId,
+    transactionId,
+    connectorId: params.connectorId,
+    idTag: params.idTag,
+    meterStart: params.meterStart,
+    startTime,
   });
   return {
     idTagInfo: { status: 'Accepted' },
@@ -51,6 +62,12 @@ export function stopTransaction(params: StopTransactionParams, chargePointId: st
     params.meterStop,
     params.timestamp
   );
+  notifyTransactionStopped({
+    chargePointId,
+    transactionId: params.transactionId,
+    meterStop: params.meterStop,
+    endTime: params.timestamp,
+  });
   return { idTagInfo: { status: 'Accepted' } };
 }
 
@@ -75,12 +92,20 @@ export function transactionEvent(params: TransactionEventParams, chargePointId: 
   const idTag = params.transactionInfo?.idToken?.idToken ?? '';
 
   if (params.eventType === 'Started') {
+    const startTime = new Date().toISOString();
     saveTransaction(chargePointId, {
       transactionId,
       chargePointId,
       connectorId,
       idTag,
-      startTime: new Date().toISOString(),
+      startTime,
+    });
+    notifyTransactionStarted({
+      chargePointId,
+      transactionId,
+      connectorId,
+      idTag,
+      startTime,
     });
     return { idTokenInfo: { status: 'Accepted' } };
   }
@@ -94,9 +119,16 @@ export function transactionEvent(params: TransactionEventParams, chargePointId: 
 
   if (params.eventType === 'Ended') {
     const sampled = params.meterValue?.[0]?.sampledValue as Array<{ measurand?: string; value: string }> | undefined;
-    const meterStop = sampled?.find((s) => s.measurand === 'Energy.Active.Import.Register');
-    const value = meterStop ? Number(meterStop.value) : undefined;
+    const meterStopVal = sampled?.find((s) => s.measurand === 'Energy.Active.Import.Register');
+    const value = meterStopVal ? Number(meterStopVal.value) : undefined;
+    const endTime = params.meterValue?.[0]?.timestamp ?? new Date().toISOString();
     closeTransaction(chargePointId, transactionId, value);
+    notifyTransactionStopped({
+      chargePointId,
+      transactionId,
+      meterStop: value,
+      endTime,
+    });
   }
 
   return {};

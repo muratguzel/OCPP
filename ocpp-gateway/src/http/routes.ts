@@ -19,6 +19,7 @@ router.get('/health', (_req, res) => {
 
 /**
  * Bağlı tüm charge point'leri listeler (remote-start/stop için chargePointId almak üzere).
+ * Includes per-connector status (Available, Charging, Faulted, etc.) for dashboard.
  */
 router.get('/charge-points', (_req, res) => {
   const list = getAllChargePoints().map((cp) => ({
@@ -26,6 +27,12 @@ router.get('/charge-points', (_req, res) => {
     protocol: cp.protocol,
     connectedAt: cp.connectedAt,
     connectorCount: cp.connectors.size,
+    connectors: Array.from(cp.connectors.values()).map((c) => ({
+      connectorId: c.connectorId,
+      status: c.status,
+      errorCode: c.errorCode,
+      timestamp: c.timestamp,
+    })),
   }));
   res.status(200).json({ chargePoints: list });
 });
