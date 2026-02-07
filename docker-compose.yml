@@ -1,0 +1,78 @@
+services:
+  # ── Infrastructure ──────────────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sarjmodul
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Application Services ────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      target: development
+    restart: unless-stopped
+    ports:
+      - "4000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sarjmodul
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: dev-jwt-secret-change-in-production-min16
+      JWT_REFRESH_SECRET: dev-jwt-refresh-secret-change-in-production-min16
+      SEED_EMAIL: admin@sarjmodul.com
+      SEED_PASSWORD: Admin123!
+      SEED_NAME: Super Admin
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  ocpp-gateway:
+    build:
+      context: ./ocpp-gateway
+      target: development
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+      - "9220:9220"
+    environment:
+      PORT: 3000
+      OCPP_PORT: 9220
+      BACKEND_API_URL: http://backend:3000
+    volumes:
+      - ./ocpp-gateway/src:/app/src
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  redisdata:
