@@ -45,6 +45,8 @@ export const chargePoints = pgTable("charge_points", {
   id: uuid("id").defaultRandom().primaryKey(),
   tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }).notNull(),
   chargePointId: varchar("charge_point_id", { length: 255 }).notNull().unique(),
+  /** Optional: OCPP Gateway identity (WebSocket path last segment). When 2.x connects as e.g. "2.0.1", set this so start charge finds the CP. */
+  ocppIdentity: varchar("ocpp_identity", { length: 255 }),
   name: varchar("name", { length: 255 }),
   connectorType: varchar("connector_type", { length: 50 }),
   maxPower: integer("max_power"),

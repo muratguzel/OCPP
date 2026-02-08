@@ -145,6 +145,7 @@ curl -s http://localhost:4000/api/tenants \
   {
     "id": "uuid",
     "name": "Acme Şarj",
+    "isSuspended": false,
     "createdAt": "2025-02-07T19:00:00.000Z",
     "updatedAt": "2025-02-07T19:00:00.000Z"
   }
@@ -191,15 +192,15 @@ curl -s -X POST http://localhost:4000/api/tenants \
 
 ### PATCH /api/tenants/:id
 
-Tenant adını günceller.
+Tenant bilgilerini günceller (kısmi güncelleme; gönderilen alanlar değişir).
 
-**Body:** `name` (zorunlu)
+**Body:** `name` (string, opsiyonel), `isSuspended` (boolean, opsiyonel)
 
 ```bash
 curl -s -X PATCH http://localhost:4000/api/tenants/TENANT_UUID \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -d '{"name":"Acme Şarj A.Ş."}'
+  -d '{"name":"Acme Şarj A.Ş.","isSuspended":false}'
 ```
 
 ---
@@ -386,6 +387,8 @@ curl -s -X DELETE http://localhost:4000/api/users/USER_UUID \
 
 Her charge point bir **tenant**’a bağlıdır. **Super Admin** tüm charge point’leri yönetir (opsiyonel `?tenantId=` ile filtre); **Admin** sadece kendi tenant’ındaki charge point’leri listeler ve CRUD yapar. `chargePointId`, OCPP istasyonunun bağlanırken kullandığı kimliktir (sistem genelinde tekil).
 
+**Konum (location):** İstasyon konumu, charge point kaydında **latitude** ve **longitude** alanları ile tanımlanır. Ayrı bir "locations" endpoint'i yoktur. Konum bilgisi charge point oluştururken (POST) veya güncellerken (PATCH) gönderilir; harita ve yakındaki istasyon listesi gibi özellikler bu alanlara göre hesaplanır.
+
 Tüm isteklerde `Authorization: Bearer <access_token>` gerekir.
 
 ---
@@ -411,6 +414,10 @@ curl -s "http://localhost:4000/api/charge-points?tenantId=TENANT_UUID" \
     "tenantId": "uuid",
     "chargePointId": "CP001",
     "name": "İstasyon A",
+    "connectorType": "Type2",
+    "maxPower": 22,
+    "latitude": "41.008238",
+    "longitude": "28.978359",
     "isActive": true,
     "createdAt": "2025-02-07T19:00:00.000Z",
     "updatedAt": "2025-02-07T19:00:00.000Z"
@@ -433,9 +440,9 @@ curl -s http://localhost:4000/api/charge-points/CP_UUID \
 
 ### POST /api/charge-points
 
-Yeni charge point ekler. **Admin** sadece kendi tenant’ı için `tenantId` gönderir.
+Yeni charge point ekler. **Admin** sadece kendi tenant’ı için `tenantId` gönderir. Konum (location) için body'de `latitude` ve `longitude` kullanılır.
 
-**Body:** `tenantId` (uuid, zorunlu), `chargePointId` (string, OCPP kimliği, tekil), `name` (string, opsiyonel)
+**Body:** `tenantId` (uuid, zorunlu), `chargePointId` (string, OCPP kimliği, tekil), `ocppIdentity` (string, opsiyonel — OCPP 2.x gateway identity, örn. "2.0.1"), `name` (string, opsiyonel), `connectorType`, `maxPower`, `latitude`, `longitude`
 
 ```bash
 curl -s -X POST http://localhost:4000/api/charge-points \
@@ -444,7 +451,11 @@ curl -s -X POST http://localhost:4000/api/charge-points \
   -d '{
     "tenantId": "TENANT_UUID",
     "chargePointId": "CP001",
-    "name": "İstasyon A"
+    "name": "İstasyon A",
+    "connectorType": "Type2",
+    "maxPower": 22,
+    "latitude": 41.008238,
+    "longitude": 28.978359
   }'
 ```
 
@@ -455,6 +466,10 @@ curl -s -X POST http://localhost:4000/api/charge-points \
   "tenantId": "uuid",
   "chargePointId": "CP001",
   "name": "İstasyon A",
+  "connectorType": "Type2",
+  "maxPower": 22,
+  "latitude": "41.008238",
+  "longitude": "28.978359",
   "isActive": true,
   "createdAt": "2025-02-07T19:00:00.000Z",
   "updatedAt": "2025-02-07T19:00:00.000Z"
@@ -465,15 +480,15 @@ curl -s -X POST http://localhost:4000/api/charge-points \
 
 ### PATCH /api/charge-points/:id
 
-Charge point günceller (name, isActive).
+Charge point günceller. Gönderilen alanlar güncellenir; konum için `latitude` ve `longitude` kullanılır.
 
-**Body:** `name` (string, opsiyonel), `isActive` (boolean, opsiyonel)
+**Body:** `name`, `isActive`, `ocppIdentity` (string, opsiyonel — OCPP 2.x gateway identity), `connectorType`, `maxPower`, `latitude`, `longitude` (hepsi opsiyonel)
 
 ```bash
 curl -s -X PATCH http://localhost:4000/api/charge-points/CP_UUID \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \
-  -d '{"name":"İstasyon A - Yeni Ad","isActive":true}'
+  -d '{"name":"İstasyon A - Yeni Ad","isActive":true,"latitude":41.008238,"longitude":28.978359}'
 ```
 
 ---
@@ -573,9 +588,38 @@ curl -s -X POST http://localhost:4000/api/charge/start \
 
 ### GET /api/transactions
 
+**Query (Super Admin):** `tenantId=uuid`, `userId=uuid` (opsiyonel filtre)
+
 ```bash
 curl -s http://localhost:4000/api/transactions \
   -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+
+# Super Admin: tenant veya kullanıcıya göre filtre
+curl -s "http://localhost:4000/api/transactions?tenantId=TENANT_UUID" \
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN"
+```
+
+**Örnek yanıt:**
+```json
+[
+  {
+    "id": "uuid",
+    "ocppTransactionId": "123",
+    "chargePointId": "CP001",
+    "tenantId": "uuid",
+    "userId": "uuid",
+    "connectorId": 1,
+    "idTag": "user-uuid",
+    "meterStart": 1000,
+    "meterStop": 1500,
+    "kwh": "0.50",
+    "cost": "6.25",
+    "startTime": "2025-02-07T10:00:00.000Z",
+    "endTime": "2025-02-07T10:30:00.000Z",
+    "createdAt": "2025-02-07T10:00:00.000Z",
+    "user": { "id": "uuid", "email": "user@example.com", "name": "Kullanıcı" }
+  }
+]
 ```
 
 ---

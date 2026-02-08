@@ -12,12 +12,25 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { StatusBadge } from '@/components/StatusBadge'
-import { Plus } from 'lucide-react'
+import { Plus, Pencil } from 'lucide-react'
 
 const GATEWAY_URL = import.meta.env.VITE_OCPP_GATEWAY_URL || 'http://localhost:3000'
 
+export interface ChargePointRow {
+  id: string
+  chargePointId: string
+  ocppIdentity?: string | null
+  name?: string | null
+  connectorType?: string | null
+  maxPower?: number | null
+  latitude?: string | null
+  longitude?: string | null
+  isActive?: boolean
+}
+
 export function ChargePointsPage() {
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingCp, setEditingCp] = useState<ChargePointRow | null>(null)
   const { user } = useAuthStore()
   const { selectedTenantId } = useTenantFilterStore()
   const queryClient = useQueryClient()
@@ -72,8 +85,8 @@ export function ChargePointsPage() {
         <p className="text-[#64748B]">Loading...</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {chargePoints.map((cp: { id: string; chargePointId: string; name?: string; connectorType?: string; maxPower?: number }) => {
-            const gatewayCp = gatewayMap.get(cp.chargePointId.toLowerCase())
+          {chargePoints.map((cp: ChargePointRow) => {
+            const gatewayCp = gatewayMap.get(cp.chargePointId.toLowerCase()) ?? (cp.ocppIdentity ? gatewayMap.get(cp.ocppIdentity.toLowerCase()) : undefined)
             const isOnline = !!gatewayCp
             const connectors: { status: string }[] = gatewayCp?.connectors ?? []
             const primaryStatus = connectors.some((c) =>
@@ -88,11 +101,29 @@ export function ChargePointsPage() {
                   ? 'Available'
                   : 'Offline'
             return (
-              <Card key={cp.id}>
+              <Card
+                key={cp.id}
+                className="cursor-pointer transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#0F172A] focus:ring-offset-2"
+                tabIndex={0}
+                onClick={() => user?.role !== 'user' && setEditingCp(cp)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    user?.role !== 'user' && setEditingCp(cp)
+                  }
+                }}
+              >
                 <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-base">{cp.chargePointId}</CardTitle>
-                    <StatusBadge status={primaryStatus} />
+                    <div className="flex items-center gap-2">
+                      {user?.role !== 'user' && (
+                        <span className="rounded p-1 text-[#64748B] hover:bg-[#f1f5f9]" title="Edit">
+                          <Pencil className="h-4 w-4" />
+                        </span>
+                      )}
+                      <StatusBadge status={primaryStatus} />
+                    </div>
                   </div>
                   <CardDescription>
                     {cp.name || cp.chargePointId}
@@ -122,6 +153,16 @@ export function ChargePointsPage() {
           }}
         />
       )}
+      {editingCp && (
+        <EditChargePointModal
+          chargePoint={editingCp}
+          onClose={() => setEditingCp(null)}
+          onSuccess={() => {
+            queryClient.invalidateQueries({ queryKey: ['charge-points'] })
+            setEditingCp(null)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -136,6 +177,7 @@ function AddChargePointModal({
   const { user } = useAuthStore()
   const [tenantId, setTenantId] = useState(user?.tenantId ?? '')
   const [chargePointId, setChargePointId] = useState('')
+  const [ocppIdentity, setOcppIdentity] = useState('')
   const [name, setName] = useState('')
   const [connectorType, setConnectorType] = useState<'Type2' | 'CCS' | 'CHAdeMO'>('Type2')
   const [maxPower, setMaxPower] = useState('')
@@ -169,6 +211,7 @@ function AddChargePointModal({
         connectorType,
         maxPower: maxPower ? parseInt(maxPower, 10) : undefined,
       }
+      if (ocppIdentity.trim()) payload.ocppIdentity = ocppIdentity.trim()
       if (latitude) payload.latitude = parseFloat(latitude)
       if (longitude) payload.longitude = parseFloat(longitude)
       createMutation.mutate(payload)
@@ -207,6 +250,16 @@ function AddChargePointModal({
               placeholder="CP001"
               required
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Gateway identity (optional)</label>
+            <input
+              className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
+              value={ocppIdentity}
+              onChange={(e) => setOcppIdentity(e.target.value)}
+              placeholder="e.g. 2.0.1 or ocpp2.1 — from GET /charge-points when 2.x connects"
+            />
+            <p className="mt-1 text-xs text-[#64748B]">Set when OCPP 2.x connects with a different WebSocket path (e.g. 2.0.1). Matches gateway list so start charge works.</p>
           </div>
           <div>
             <label className="block text-sm font-medium">Name (optional)</label>
@@ -270,6 +323,150 @@ function AddChargePointModal({
             </Button>
             <Button type="submit" disabled={createMutation.isPending}>
               {createMutation.isPending ? 'Adding...' : 'Add'}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+function EditChargePointModal({
+  chargePoint,
+  onClose,
+  onSuccess,
+}: {
+  chargePoint: ChargePointRow
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const queryClient = useQueryClient()
+  const [name, setName] = useState(chargePoint.name ?? '')
+  const [isActive, setIsActive] = useState(chargePoint.isActive ?? true)
+  const [ocppIdentity, setOcppIdentity] = useState(chargePoint.ocppIdentity ?? '')
+  const [connectorType, setConnectorType] = useState<'Type2' | 'CCS' | 'CHAdeMO'>(
+    (chargePoint.connectorType as 'Type2' | 'CCS' | 'CHAdeMO') ?? 'Type2'
+  )
+  const [maxPower, setMaxPower] = useState(chargePoint.maxPower != null ? String(chargePoint.maxPower) : '')
+  const [latitude, setLatitude] = useState(chargePoint.latitude ?? '')
+  const [longitude, setLongitude] = useState(chargePoint.longitude ?? '')
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      api.patch(`/charge-points/${chargePoint.id}`, payload).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charge-points'] })
+      onSuccess()
+    },
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const payload: Record<string, unknown> = {
+      name: name.trim() || undefined,
+      isActive,
+      connectorType,
+      maxPower: maxPower ? parseInt(maxPower, 10) : undefined,
+    }
+    if (ocppIdentity.trim()) payload.ocppIdentity = ocppIdentity.trim()
+    else payload.ocppIdentity = null
+    const lat = latitude.trim() ? parseFloat(latitude) : NaN
+    const lng = longitude.trim() ? parseFloat(longitude) : NaN
+    if (!Number.isNaN(lat)) payload.latitude = lat
+    if (!Number.isNaN(lng)) payload.longitude = lng
+    updateMutation.mutate(payload)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-lg border-2 border-[#0F172A] bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-semibold">Edit Charge Point</h2>
+        <p className="mt-1 text-sm text-[#64748B]">ID: {chargePoint.chargePointId}</p>
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div>
+            <label className="block text-sm font-medium">Name (optional)</label>
+            <input
+              className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Station A"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="edit-isActive"
+              checked={isActive}
+              onChange={(e) => setIsActive(e.target.checked)}
+              className="h-4 w-4 rounded border-[#0F172A]"
+            />
+            <label htmlFor="edit-isActive" className="text-sm font-medium">Active</label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Gateway identity (optional)</label>
+            <input
+              className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
+              value={ocppIdentity}
+              onChange={(e) => setOcppIdentity(e.target.value)}
+              placeholder="e.g. 2.0.1"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Connector Type</label>
+            <select
+              className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
+              value={connectorType}
+              onChange={(e) => setConnectorType(e.target.value as 'Type2' | 'CCS' | 'CHAdeMO')}
+            >
+              <option value="Type2">Type 2</option>
+              <option value="CCS">CCS</option>
+              <option value="CHAdeMO">CHAdeMO</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium">Max Power (kW, optional)</label>
+            <input
+              className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
+              type="number"
+              min="1"
+              value={maxPower}
+              onChange={(e) => setMaxPower(e.target.value)}
+              placeholder="22"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium">Latitude (optional)</label>
+              <input
+                className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
+                type="number"
+                step="any"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value)}
+                placeholder="41.0082"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Longitude (optional)</label>
+              <input
+                className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
+                type="number"
+                step="any"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value)}
+                placeholder="28.9784"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </form>

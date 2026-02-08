@@ -42,6 +42,15 @@ export function MapWidget() {
       const L = await import('leaflet')
       await import('leaflet/dist/leaflet.css')
 
+      // Vite/bundled build'de Leaflet varsayılan pin resimleri yüklenmez; CDN ile açık icon kullan.
+      const markerIcon = L.icon({
+        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+        iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+        shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+      })
+
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove()
       }
@@ -61,7 +70,7 @@ export function MapWidget() {
       }).addTo(map)
 
       pointsWithCoords.forEach((cp) => {
-        L.marker([parseFloat(cp.latitude!), parseFloat(cp.longitude!)])
+        L.marker([parseFloat(cp.latitude!), parseFloat(cp.longitude!)], { icon: markerIcon })
           .addTo(map)
           .bindPopup(cp.name || cp.chargePointId)
       })
