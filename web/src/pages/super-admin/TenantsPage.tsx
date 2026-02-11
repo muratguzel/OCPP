@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Plus, Pencil, Ban, CheckCircle } from 'lucide-react'
+import { Plus, Pencil, Ban, CheckCircle, Trash2 } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
 
 export function TenantsPage() {
@@ -163,6 +163,15 @@ function TenantActions({
     },
   })
 
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/tenants/${tenant.id}`).then((r) => r.data),
+    onSuccess: () => {
+      onUpdate()
+      setDeleteOpen(false)
+    },
+  })
+
   return (
     <div className="flex items-center justify-end gap-1">
       {editing ? (
@@ -205,6 +214,36 @@ function TenantActions({
               <Ban className="h-4 w-4 text-[#F59E0B]" />
             )}
           </Button>
+          <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Tenant'ı sil</DialogTitle>
+                <DialogDescription>
+                  <strong>{tenant.name}</strong> tenant'ını silmek üzeresiniz. Bu işlem geri alınamaz ve bu tenant'a bağlı tüm kullanıcılar, şarj noktaları ve işlemler de silinecektir. Emin misiniz?
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setDeleteOpen(false)}>
+                  İptal
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={() => deleteMutation.mutate(undefined)}
+                  disabled={deleteMutation.isPending}
+                >
+                  {deleteMutation.isPending ? 'Siliniyor...' : 'Sil'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>

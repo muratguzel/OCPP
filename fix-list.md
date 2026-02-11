@@ -1,3 +1,5 @@
+## V1
+
 - user' lara numarataj field' ı eklenecek. Her bir user admin veya super admin tarafından yaratılırken yeni user yaratma formunda numarataj field' ı olacak ve bu doldurulacak.
 - birden fazla farklı user' lar aynı numarataja sahip olabilir.
 - her bir user' ın cep numarası da kayıt sırasında alınacak. cep numarası unique olacak.
@@ -11,3 +13,10 @@
 - User' ların mobil uygulamada şimdiye kadar ne kadar kullandıklarını görüntleceyceği bir ekran olacak. Bu ekran sadece ve sadece kendi numaratajına ve kullanıcı bilgisine göre görüntülenecek.
 - Admin kendisi bir charge point ekleyemez. Şu anda eklenir gibi bir durumda bu iptal edilecek, kaldırılacak.
 - Super Admin tüm charge point' leri yönetebilecek. Yeni bir charge point oluşturduğunda yaratılma tarihi de mutlaka olacak.
+
+## V2
+
+- transaction' ların kapanma sorunu var. transaction' lar oluşturulduğunda bazen kapanıyor bazen kapanmıyor. Nedenini araştırıp fix edecek.
+- User login ise aynı aynda tekrardan farklı bir telefon ile login olmaması gerekiyor. **Bu konu önemli.**
+- Socket aktif ise charging statusunde ise başka bir kullanıcı QR kodu okuttuğunda ekrana liste çıkıp şarjı başlat yerine listenin çıkmadan "Şarj İstasyonu Dolu" diye bir mesaj çıkacak. Bu konu fix edilecek.
+- Şarj olurken ekrandaki fiyat oluşturulan fiyata göre değil tahmini bir fiyata göre çalışıyor bu konu fix edilecek.

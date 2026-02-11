@@ -6,6 +6,8 @@ export const createUserSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
   role: z.enum(["admin", "user"]).default("user"),
   tenantId: z.string().uuid().optional(),
+  numaraTaj: z.string().min(1, "Numarataj is required").max(255),
+  phone: z.string().min(1, "Phone number is required").max(50),
 });
 
 export const updateUserSchema = z.object({
@@ -16,6 +18,8 @@ export const updateUserSchema = z.object({
     .optional(),
   name: z.string().min(1).max(255).optional(),
   isActive: z.boolean().optional(),
+  numaraTaj: z.string().min(1).max(255).optional(),
+  phone: z.string().min(1).max(50).optional(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;

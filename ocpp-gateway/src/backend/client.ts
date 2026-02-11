@@ -31,7 +31,9 @@ export function notifyTransactionStarted(payload: {
   meterStart?: number;
   startTime?: string;
 }): void {
-  notifyBackend('/webhook/transaction-started', payload).catch(() => {});
+  notifyBackend('/webhook/transaction-started', payload).catch((err) =>
+    console.warn('[backend] transaction-started failed:', err instanceof Error ? err.message : err)
+  );
 }
 
 export function notifyTransactionStopped(payload: {
@@ -40,5 +42,13 @@ export function notifyTransactionStopped(payload: {
   meterStop?: number;
   endTime?: string;
 }): void {
-  notifyBackend('/webhook/transaction-stopped', payload).catch(() => {});
+  const body = {
+    chargePointId: String(payload.chargePointId ?? ''),
+    transactionId: payload.transactionId,
+    meterStop: payload.meterStop,
+    endTime: payload.endTime,
+  };
+  notifyBackend('/webhook/transaction-stopped', body).catch((err) =>
+    console.warn('[backend] transaction-stopped failed:', err instanceof Error ? err.message : err)
+  );
 }

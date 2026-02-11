@@ -1,6 +1,6 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql, isNull } from "drizzle-orm";
 import { db } from "../../config/database.js";
-import { transactions } from "../../config/schema.js";
+import { transactions, tenants } from "../../config/schema.js";
 import { getChargePointByChargePointId } from "../charge-points/charge-points.service.js";
 import { AppError } from "../../middleware/errorHandler.js";
 import type {
@@ -14,6 +14,8 @@ const GATEWAY_URL =
 
 export async function startCharge(
   userId: string,
+  userTenantId: string | undefined,
+  userRole: "super_admin" | "admin" | "user",
   input: StartChargeInput
 ): Promise<{ success: boolean; status: string; chargePointId: string }> {
   const cp = await getChargePointByChargePointId(input.chargePointId);
@@ -22,6 +24,12 @@ export async function startCharge(
   }
   if (!cp.isActive) {
     throw new AppError(400, "Charge point is not active");
+  }
+
+  if (userRole !== "super_admin" && userTenantId) {
+    if (cp.tenantId !== userTenantId) {
+      throw new AppError(403, "Charge point does not belong to your organization");
+    }
   }
 
   const url = `${GATEWAY_URL}/remote-start`;
@@ -92,23 +100,48 @@ export async function webhookTransactionStarted(
 export async function webhookTransactionStopped(
   input: WebhookTransactionStoppedInput
 ): Promise<void> {
-  const ocppTxId = String(input.transactionId);
+  const ocppTxId = String(input.transactionId ?? "").trim();
+  const chargePointIdRaw = String(input.chargePointId ?? "").trim();
+  if (!ocppTxId || !chargePointIdRaw) {
+    console.warn(
+      "[charge/webhook] transaction-stopped missing chargePointId or transactionId, skipping"
+    );
+    return;
+  }
 
-  const [existing] = await db
+  let [existing] = await db
     .select()
     .from(transactions)
     .where(
       and(
-        eq(transactions.chargePointId, input.chargePointId),
+        sql`lower(${transactions.chargePointId}) = lower(${chargePointIdRaw})`,
         eq(transactions.ocppTransactionId, ocppTxId)
       )
     )
     .limit(1);
 
   if (!existing) {
+    const openByTxId = await db
+      .select()
+      .from(transactions)
+      .where(
+        and(eq(transactions.ocppTransactionId, ocppTxId), isNull(transactions.endTime))
+      )
+      .limit(2);
+    if (openByTxId.length === 1) {
+      existing = openByTxId[0];
+    }
+  }
+
+  if (!existing) {
     console.warn(
-      `[charge/webhook] Transaction not found: ${input.chargePointId}/${ocppTxId}, skipping stop`
+      `[charge/webhook] Transaction not found: chargePointId=${chargePointIdRaw} ocppTxId=${ocppTxId}, skipping stop`
     );
+    return;
+  }
+
+  // Idempotent: already ended (e.g. StatusNotification fallback closed first)
+  if (existing.endTime) {
     return;
   }
 
@@ -116,8 +149,18 @@ export async function webhookTransactionStopped(
   const meterStop = input.meterStop ?? meterStart;
   const wh = Math.max(0, meterStop - meterStart);
   const kwh = wh / 1000;
-  const PRICE_PER_KWH = 12.5;
-  const cost = kwh * PRICE_PER_KWH;
+
+  const tenant = await db.query.tenants.findFirst({
+    where: eq(tenants.id, existing.tenantId),
+    columns: { pricePerKwh: true, vatRate: true },
+  });
+
+  const pricePerKwh = tenant?.pricePerKwh
+    ? parseFloat(tenant.pricePerKwh)
+    : 0;
+  const vatRate = tenant?.vatRate ? parseFloat(tenant.vatRate) : 0;
+  const subtotal = kwh * pricePerKwh;
+  const cost = subtotal * (1 + vatRate / 100);
 
   await db
     .update(transactions)

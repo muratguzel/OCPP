@@ -31,7 +31,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { StatusBadge } from '@/components/StatusBadge'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 export function UsersPage() {
   const [open, setOpen] = useState(false)
@@ -97,9 +97,14 @@ export function UsersPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
+                  <TableHead>Numarataj</TableHead>
+                  <TableHead>Phone</TableHead>
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
+                  {user?.role === 'super_admin' && (
+                    <TableHead className="text-right">Actions</TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -108,6 +113,8 @@ export function UsersPage() {
                     id: string
                     name: string
                     email: string
+                    numaraTaj?: string | null
+                    phone?: string | null
                     role: string
                     isActive: boolean
                     createdAt: string
@@ -115,6 +122,8 @@ export function UsersPage() {
                     <TableRow key={u.id}>
                       <TableCell className="font-medium">{u.name}</TableCell>
                       <TableCell>{u.email}</TableCell>
+                      <TableCell>{u.numaraTaj ?? '-'}</TableCell>
+                      <TableCell>{u.phone ?? '-'}</TableCell>
                       <TableCell>{u.role}</TableCell>
                       <TableCell>
                         <StatusBadge
@@ -124,6 +133,17 @@ export function UsersPage() {
                       <TableCell>
                         {new Date(u.createdAt).toLocaleDateString()}
                       </TableCell>
+                      {user?.role === 'super_admin' && (
+                        <TableCell className="text-right">
+                          <UserDeleteButton
+                            user={u}
+                            currentUserId={user?.id}
+                            onDeleted={() =>
+                              queryClient.invalidateQueries({ queryKey: ['users'] })
+                            }
+                          />
+                        </TableCell>
+                      )}
                     </TableRow>
                   )
                 )}
@@ -133,6 +153,69 @@ export function UsersPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+function UserDeleteButton({
+  user,
+  currentUserId,
+  onDeleted,
+}: {
+  user: { id: string; name: string; email: string; role: string }
+  currentUserId: string | undefined
+  onDeleted: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/users/${user.id}`).then((r) => r.data),
+    onSuccess: () => {
+      onDeleted()
+      setOpen(false)
+    },
+  })
+
+  const isSelf = currentUserId === user.id
+  const isSuperAdminTarget = user.role === 'super_admin'
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+        onClick={() => setOpen(true)}
+        disabled={isSelf || isSuperAdminTarget}
+        title={
+          isSelf
+            ? 'Kendinizi silemezsiniz'
+            : isSuperAdminTarget
+              ? 'Super admin silinemez'
+              : 'Kullanıcıyı sil'
+        }
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Kullanıcıyı sil</DialogTitle>
+          <DialogDescription>
+            <strong>{user.name}</strong> ({user.email}) kullanıcısını devre dışı bırakmak üzeresiniz. Hesap pasif hale gelecektir. Emin misiniz?
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setOpen(false)}>
+            İptal
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() => deleteMutation.mutate(undefined)}
+            disabled={deleteMutation.isPending}
+          >
+            {deleteMutation.isPending ? 'Siliniyor...' : 'Sil'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -148,6 +231,8 @@ function AddUserForm({
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
+  const [numaraTaj, setNumaraTaj] = useState('')
+  const [phone, setPhone] = useState('')
   const [tenantId, setTenantId] = useState('')
   const [role, setRole] = useState<'user' | 'admin'>('user')
 
@@ -163,6 +248,8 @@ function AddUserForm({
       email,
       password,
       name,
+      numaraTaj: numaraTaj.trim(),
+      phone: phone.trim(),
       role,
     }
     if (isSuperAdmin && tenantId) payload.tenantId = tenantId
@@ -207,6 +294,27 @@ function AddUserForm({
             </div>
           </>
         )}
+        <div className="space-y-2">
+          <Label htmlFor="numaraTaj">Numarataj</Label>
+          <Input
+            id="numaraTaj"
+            value={numaraTaj}
+            onChange={(e) => setNumaraTaj(e.target.value)}
+            placeholder="e.g. 123456"
+            required
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="phone">Phone</Label>
+          <Input
+            id="phone"
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="e.g. +905551234567"
+            required
+          />
+        </div>
         <div className="space-y-2">
           <Label htmlFor="name">Name</Label>
           <Input

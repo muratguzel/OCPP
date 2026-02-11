@@ -58,6 +58,7 @@ export const translations = {
     back: 'Geri',
     close: 'Kapat',
     retry: 'Yeniden Dene',
+    logout: 'Çıkış Yap',
     connectionErrorHint: 'Sunucuya ulaşılamıyor. OCPP Gateway çalışıyor mu? Fiziksel cihazda .env ile EXPO_PUBLIC_OCPP_GATEWAY_URL ayarlayın (örn. http://BILGISAYAR_IP:3000).',
   },
   en: {
@@ -117,6 +118,7 @@ export const translations = {
     back: 'Back',
     close: 'Close',
     retry: 'Retry',
+    logout: 'Log Out',
     connectionErrorHint: 'Cannot reach server. Is OCPP Gateway running? On a physical device, set EXPO_PUBLIC_OCPP_GATEWAY_URL in .env (e.g. http://YOUR_IP:3000).',
   },
   de: {
@@ -176,6 +178,7 @@ export const translations = {
     back: 'Zurück',
     close: 'Schließen',
     retry: 'Erneut versuchen',
+    logout: 'Abmelden',
     connectionErrorHint: 'Server nicht erreichbar. Läuft das OCPP Gateway? Auf Gerät EXPO_PUBLIC_OCPP_GATEWAY_URL in .env setzen.',
   },
   fr: {
@@ -235,6 +238,7 @@ export const translations = {
     back: 'Retour',
     close: 'Fermer',
     retry: 'Réessayer',
+    logout: 'Déconnexion',
     connectionErrorHint: 'Serveur inaccessible. Le gateway OCPP est-il démarré? Sur appareil, définir EXPO_PUBLIC_OCPP_GATEWAY_URL dans .env.',
   },
   ar: {
@@ -294,6 +298,7 @@ export const translations = {
     back: 'رجوع',
     close: 'إغلاق',
     retry: 'إعادة المحاولة',
+    logout: 'تسجيل الخروج',
     connectionErrorHint: 'لا يمكن الوصول إلى الخادم. هل بوابة OCPP تعمل؟ على الجهاز قم بتعيين EXPO_PUBLIC_OCPP_GATEWAY_URL في .env.',
   },
 };

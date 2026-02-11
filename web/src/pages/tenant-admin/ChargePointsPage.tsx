@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { StatusBadge } from '@/components/StatusBadge'
-import { Plus, Pencil } from 'lucide-react'
+import { Plus, Pencil, Trash2 } from 'lucide-react'
 
 const GATEWAY_URL = import.meta.env.VITE_OCPP_GATEWAY_URL || 'http://localhost:3000'
 
@@ -74,7 +74,7 @@ export function ChargePointsPage() {
             Manage and monitor charging stations
           </p>
         </div>
-        {user?.role !== 'user' && (
+        {user?.role === 'super_admin' && (
           <Button onClick={() => setShowAddModal(true)}>
             <Plus className="h-4 w-4" />
             Add Charge Point
@@ -161,6 +161,11 @@ export function ChargePointsPage() {
             queryClient.invalidateQueries({ queryKey: ['charge-points'] })
             setEditingCp(null)
           }}
+          onDeleted={() => {
+            queryClient.invalidateQueries({ queryKey: ['charge-points'] })
+            setEditingCp(null)
+          }}
+          canDelete={user?.role === 'super_admin'}
         />
       )}
     </div>
@@ -335,12 +340,17 @@ function EditChargePointModal({
   chargePoint,
   onClose,
   onSuccess,
+  onDeleted,
+  canDelete,
 }: {
   chargePoint: ChargePointRow
   onClose: () => void
   onSuccess: () => void
+  onDeleted?: () => void
+  canDelete?: boolean
 }) {
   const queryClient = useQueryClient()
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [name, setName] = useState(chargePoint.name ?? '')
   const [isActive, setIsActive] = useState(chargePoint.isActive ?? true)
   const [ocppIdentity, setOcppIdentity] = useState(chargePoint.ocppIdentity ?? '')
@@ -357,6 +367,15 @@ function EditChargePointModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charge-points'] })
       onSuccess()
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/charge-points/${chargePoint.id}`).then((r) => r.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['charge-points'] })
+      setShowDeleteConfirm(false)
+      onDeleted?.()
     },
   })
 
@@ -461,16 +480,57 @@ function EditChargePointModal({
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? 'Saving...' : 'Save'}
-            </Button>
+          <div className="flex flex-col gap-3 pt-2">
+            {canDelete && (
+              <div className="border-t border-[#e2e8f0] pt-3">
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => setShowDeleteConfirm(true)}
+                  disabled={deleteMutation.isPending}
+                  className="w-full sm:w-auto"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Charge Point
+                </Button>
+              </div>
+            )}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? 'Saving...' : 'Save'}
+              </Button>
+            </div>
           </div>
         </form>
       </div>
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60" onClick={() => setShowDeleteConfirm(false)}>
+          <div
+            className="mx-4 w-full max-w-sm rounded-lg border-2 border-red-200 bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-red-700">Delete Charge Point?</h3>
+            <p className="mt-2 text-sm text-[#64748B]">
+              Are you sure you want to delete <strong>{chargePoint.chargePointId}</strong>? This action cannot be undone.
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => deleteMutation.mutate()}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

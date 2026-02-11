@@ -8,9 +8,10 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { getChargePoints, type ChargePoint } from '../api/ocppGateway';
@@ -19,15 +20,21 @@ import { OCPP_GATEWAY_URL } from '../constants/config';
 import type { RootStackParamList } from '../types/navigation';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'ChargingStart'>;
+type Route = RouteProp<RootStackParamList, 'ChargingStart'>;
 
 export const ChargingStartScreen: React.FC = () => {
   const { t } = useLanguage();
   const navigation = useNavigation<Nav>();
+  const route = useRoute<Route>();
+  const qrChargePointId = route.params?.chargePointId;
+  const qrChargePointName = route.params?.chargePointName;
+
   const [chargePoints, setChargePoints] = useState<ChargePoint[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!qrChargePointId);
   const [starting, setStarting] = useState(false);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(qrChargePointId ?? null);
   const [error, setError] = useState<string | null>(null);
+  const insets = useSafeAreaInsets();
 
   const fetchChargePoints = () => {
     setLoading(true);
@@ -35,7 +42,7 @@ export const ChargingStartScreen: React.FC = () => {
     getChargePoints()
       .then((res) => {
         setChargePoints(res.chargePoints || []);
-        if (res.chargePoints?.length) {
+        if (res.chargePoints?.length && !qrChargePointId) {
           setSelectedId(res.chargePoints[0].chargePointId);
         }
       })
@@ -46,17 +53,20 @@ export const ChargingStartScreen: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchChargePoints();
-  }, []);
+    if (!qrChargePointId) {
+      fetchChargePoints();
+    }
+  }, [qrChargePointId]);
 
   const handleStartCharging = async () => {
-    if (!selectedId) return;
+    const id = selectedId ?? qrChargePointId;
+    if (!id) return;
     setStarting(true);
     setError(null);
     try {
-      const res = await startCharge({ chargePointId: selectedId, connectorId: 1 });
+      const res = await startCharge({ chargePointId: id, connectorId: 1 });
       if (res.success) {
-        navigation.navigate('ChargingActive', { chargePointId: selectedId });
+        navigation.navigate('ChargingActive', { chargePointId: id });
       } else {
         Alert.alert(t('stationInfo'), res.status || 'Start failed');
       }
@@ -68,7 +78,10 @@ export const ChargingStartScreen: React.FC = () => {
     }
   };
 
-  if (loading) {
+  const effectiveSelectedId = selectedId ?? qrChargePointId;
+  const showQROnly = !!qrChargePointId;
+
+  if (loading && !showQROnly) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator size="large" color="#22d3ee" />
@@ -82,7 +95,7 @@ export const ChargingStartScreen: React.FC = () => {
       colors={['#000000', '#111827', '#1f2937']}
       style={styles.gradient}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
@@ -110,7 +123,36 @@ export const ChargingStartScreen: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {chargePoints.length === 0 && !error ? (
+        {showQROnly && effectiveSelectedId ? (
+          <TouchableOpacity
+            style={[styles.card, styles.cardSelected]}
+            activeOpacity={1}
+          >
+            <LinearGradient
+              colors={['#06b6d4', '#2563eb']}
+              style={styles.cardImage}
+            >
+              <Text style={styles.cardImageIcon}>⚡</Text>
+            </LinearGradient>
+            <View style={styles.cardBody}>
+              <Text style={styles.cardTitle}>
+                {qrChargePointName || effectiveSelectedId}
+              </Text>
+              <Text style={styles.cardMeta}>{effectiveSelectedId}</Text>
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{t('available')}</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>{t('power')}</Text>
+                <Text style={styles.infoValue}>—</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>{t('price')}</Text>
+                <Text style={styles.infoValue}>— {t('perKwh')}</Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        ) : chargePoints.length === 0 && !error ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyText}>No stations connected</Text>
           </View>
@@ -152,7 +194,7 @@ export const ChargingStartScreen: React.FC = () => {
           ))
         ) : null}
       </ScrollView>
-      {chargePoints.length > 0 && selectedId && (
+      {effectiveSelectedId && (
         <View style={styles.footer}>
           <TouchableOpacity
             style={styles.startButton}
@@ -193,7 +235,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 24,
+    paddingHorizontal: 24,
     paddingBottom: 8,
   },
   backButton: {

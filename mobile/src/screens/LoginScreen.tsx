@@ -13,6 +13,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { LanguageSelector } from '../components/LanguageSelector';
@@ -24,6 +25,7 @@ export const LoginScreen: React.FC = () => {
   const { t } = useLanguage();
   const { login } = useAuth();
   const navigation = useNavigation<Nav>();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -56,7 +58,7 @@ export const LoginScreen: React.FC = () => {
       colors={['#000000', '#111827', '#1f2937']}
       style={styles.gradient}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <LanguageSelector />
       </View>
       <KeyboardAvoidingView
@@ -128,7 +130,8 @@ export const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   header: {
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
     alignItems: 'flex-end',
   },
   content: {

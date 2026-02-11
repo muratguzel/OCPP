@@ -108,6 +108,19 @@ export async function getMe(): Promise<User> {
   return request<User>('/auth/me');
 }
 
+export interface Transaction {
+  id: string;
+  chargePointId: string;
+  startTime: string;
+  endTime?: string | null;
+  kwh?: string | null;
+  cost?: string | null;
+}
+
+export async function getTransactions(): Promise<Transaction[]> {
+  return request<Transaction[]>('/transactions');
+}
+
 export async function startCharge(params: {
   chargePointId: string;
   connectorId?: number;

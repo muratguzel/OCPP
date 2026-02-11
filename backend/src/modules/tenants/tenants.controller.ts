@@ -21,6 +21,12 @@ export async function getTenantById(
   next: NextFunction
 ): Promise<void> {
   try {
+    const role = req.user!.role as string;
+    const userTenantId = req.user!.tenantId;
+    if (role === "admin" && req.params.id !== userTenantId) {
+      res.status(403).json({ error: "Can only view own tenant" });
+      return;
+    }
     const tenant = await tenantsService.getTenantById(req.params.id);
     res.json(tenant);
   } catch (err) {
@@ -49,6 +55,12 @@ export async function updateTenant(
   next: NextFunction
 ): Promise<void> {
   try {
+    const role = req.user!.role as string;
+    const userTenantId = req.user!.tenantId;
+    if (role === "admin" && req.params.id !== userTenantId) {
+      res.status(403).json({ error: "Can only update own tenant" });
+      return;
+    }
     const tenant = await tenantsService.updateTenant(
       req.params.id,
       req.body as UpdateTenantInput

@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { getTransactions, getMeters } from '../api/ocppGateway';
@@ -34,6 +35,7 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
   onStopCharging,
 }) => {
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [transactionId, setTransactionId] = useState<number | string | null>(null);
   const [startTime, setStartTime] = useState<Date>(() => new Date());
   const [meters, setMeters] = useState<MetersResponse | null>(null);
@@ -133,7 +135,7 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
       colors={['#000000', '#111827', '#000000']}
       style={styles.gradient}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <LanguageSelector />
       </View>
       <View style={styles.content}>
@@ -195,7 +197,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   retryText: { color: '#fff' },
-  header: { padding: 24, alignItems: 'flex-end' },
+  header: { paddingHorizontal: 24, paddingBottom: 24, alignItems: 'flex-end' },
   content: {
     flex: 1,
     alignItems: 'center',

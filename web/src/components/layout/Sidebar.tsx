@@ -13,6 +13,8 @@ import {
   CreditCard,
   BarChart3,
   FileText,
+  QrCode,
+  DollarSign,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore, type Role } from '@/store/auth'
@@ -55,9 +57,12 @@ export function Sidebar({
       ? [
           { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { path: '/charge-points', label: 'Charge Points', icon: Zap },
+          { path: '/qr-codes', label: 'QR Codes', icon: QrCode },
+          { path: '/pricing', label: 'Pricing', icon: DollarSign },
           { path: '/users', label: 'Users', icon: Users },
           { path: '/tenants', label: 'Tenants', icon: Building2 },
           { path: '/transactions', label: 'Transactions', icon: FileText },
+          { path: '/payments', label: 'Payments', icon: FileText },
           { path: '/reports', label: 'Reports', icon: BarChart3 },
           { path: '/settings', label: 'Settings', icon: Settings },
         ]
@@ -65,8 +70,10 @@ export function Sidebar({
       ? [
           { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { path: '/charge-points', label: 'Charge Points', icon: Zap },
+          { path: '/pricing', label: 'Pricing', icon: DollarSign },
           { path: '/users', label: 'Users', icon: Users },
           { path: '/transactions', label: 'Transactions', icon: FileText },
+          { path: '/payments', label: 'Payments', icon: FileText },
           { path: '/reports', label: 'Reports', icon: BarChart3 },
           { path: '/settings', label: 'Settings', icon: Settings },
         ]

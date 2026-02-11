@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StyleSheet } from 'react-native';
 import { LanguageProvider } from './src/contexts/LanguageContext';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
@@ -12,6 +13,7 @@ import { QRScannerScreen } from './src/screens/QRScannerScreen';
 import { ChargingStartScreen } from './src/screens/ChargingStartScreen';
 import { ChargingActiveStackScreen } from './src/screens/ChargingActiveStackScreen';
 import { ChargingSummaryScreen } from './src/screens/ChargingSummaryScreen';
+import { UsageScreen } from './src/screens/UsageScreen';
 import type { RootStackParamList } from './src/types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -30,6 +32,7 @@ function AppNavigator() {
 
   return (
     <Stack.Navigator
+      key={isAuthenticated ? 'auth' : 'guest'}
       initialRouteName={isAuthenticated ? 'QR' : 'Login'}
       screenOptions={{
         headerShown: false,
@@ -42,6 +45,7 @@ function AppNavigator() {
       <Stack.Screen name="ChargingStart" component={ChargingStartScreen} />
       <Stack.Screen name="ChargingActive" component={ChargingActiveStackScreen} />
       <Stack.Screen name="ChargingSummary" component={ChargingSummaryScreen} />
+      <Stack.Screen name="Usage" component={UsageScreen} />
     </Stack.Navigator>
   );
 }
@@ -49,14 +53,16 @@ function AppNavigator() {
 export default function App() {
   return (
     <GestureHandlerRootView style={styles.root}>
-      <LanguageProvider>
-        <AuthProvider>
-          <NavigationContainer>
-            <StatusBar style="light" />
-            <AppNavigator />
-          </NavigationContainer>
-        </AuthProvider>
-      </LanguageProvider>
+      <SafeAreaProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <NavigationContainer>
+              <StatusBar style="light" />
+              <AppNavigator />
+            </NavigationContainer>
+          </AuthProvider>
+        </LanguageProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

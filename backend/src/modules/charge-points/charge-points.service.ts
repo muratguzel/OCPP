@@ -104,10 +104,8 @@ export async function createChargePoint(
   requesterRole: Role,
   requesterTenantId: string | undefined
 ) {
-  if (requesterRole === "admin") {
-    if (input.tenantId !== requesterTenantId) {
-      throw new AppError(403, "Admins can only create charge points for their own tenant");
-    }
+  if (requesterRole !== "super_admin") {
+    throw new AppError(403, "Only super admin can create charge points");
   }
 
   const tenant = await db.query.tenants.findFirst({
@@ -181,19 +179,18 @@ export async function updateChargePoint(
 
 export async function deleteChargePoint(
   id: string,
-  requesterRole: Role,
-  requesterTenantId: string | undefined
+  requesterRole: Role
 ) {
+  if (requesterRole !== "super_admin") {
+    throw new AppError(403, "Only super admin can delete charge points");
+  }
+
   const cp = await db.query.chargePoints.findFirst({
     where: eq(chargePoints.id, id),
   });
 
   if (!cp) {
     throw new AppError(404, "Charge point not found");
-  }
-
-  if (requesterRole === "admin" && cp.tenantId !== requesterTenantId) {
-    throw new AppError(403, "Insufficient permissions");
   }
 
   const [deleted] = await db

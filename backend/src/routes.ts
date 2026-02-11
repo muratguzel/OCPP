@@ -6,6 +6,7 @@ import tenantsRoutes from "./modules/tenants/tenants.routes.js";
 import usersRoutes from "./modules/users/users.routes.js";
 import statsRoutes from "./modules/stats/stats.routes.js";
 import transactionsRoutes from "./modules/transactions/transactions.routes.js";
+import paymentsRoutes from "./modules/payments/payments.routes.js";
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use("/charge-points", chargePointsRoutes);
 router.use("/charge", chargeRoutes);
 router.use("/stats", statsRoutes);
 router.use("/transactions", transactionsRoutes);
+router.use("/payments", paymentsRoutes);
 
 export default router;

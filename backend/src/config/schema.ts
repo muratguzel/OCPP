@@ -16,6 +16,8 @@ export const tenants = pgTable("tenants", {
   id: uuid("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   isSuspended: boolean("is_suspended").notNull().default(false),
+  pricePerKwh: decimal("price_per_kwh", { precision: 10, scale: 4 }),
+  vatRate: decimal("vat_rate", { precision: 5, scale: 2 }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -29,7 +31,9 @@ export const users = pgTable("users", {
   password: varchar("password", { length: 255 }).notNull(),
   name: varchar("name", { length: 255 }).notNull(),
   role: roleEnum("role").notNull().default("user"),
-  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "set null" }),
+  tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }),
+  numaraTaj: varchar("numara_taj", { length: 255 }),
+  phone: varchar("phone", { length: 50 }).unique(),
   createdById: uuid("created_by_id").references((): any => users.id, {
     onDelete: "set null",
   }),

@@ -25,6 +25,10 @@ router.patch(
   validate(updateChargePointSchema),
   chargePointsController.updateChargePoint
 );
-router.delete("/:id", chargePointsController.deleteChargePoint);
+router.delete(
+  "/:id",
+  requireRole("super_admin"),
+  chargePointsController.deleteChargePoint
+);
 
 export default router;

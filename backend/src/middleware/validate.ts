@@ -1,10 +1,24 @@
 import { Request, Response, NextFunction } from "express";
 import { ZodSchema, ZodError } from "zod";
 
-export function validate(schema: ZodSchema) {
+declare global {
+  namespace Express {
+    interface Request {
+      validatedQuery?: Record<string, unknown>;
+    }
+  }
+}
+
+export function validate(schema: ZodSchema, source: "body" | "query" = "body") {
   return (req: Request, res: Response, next: NextFunction): void => {
     try {
-      req.body = schema.parse(req.body);
+      const data = source === "query" ? req.query : req.body;
+      const parsed = schema.parse(data);
+      if (source === "query") {
+        req.validatedQuery = parsed as Record<string, unknown>;
+      } else {
+        req.body = parsed;
+      }
       next();
     } catch (err) {
       if (err instanceof ZodError) {
