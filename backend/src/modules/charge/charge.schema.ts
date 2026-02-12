@@ -21,6 +21,10 @@ export const webhookTransactionStoppedSchema = z.object({
   endTime: z.string().optional(),
 });
 
+export const getPriceQuerySchema = z.object({
+  chargePointId: z.string().min(1, "Charge point id is required").max(255),
+});
+
 export type StartChargeInput = z.infer<typeof startChargeSchema>;
 export type WebhookTransactionStartedInput = z.infer<
   typeof webhookTransactionStartedSchema
@@ -28,3 +32,4 @@ export type WebhookTransactionStartedInput = z.infer<
 export type WebhookTransactionStoppedInput = z.infer<
   typeof webhookTransactionStoppedSchema
 >;
+export type GetPriceQuery = z.infer<typeof getPriceQuerySchema>;

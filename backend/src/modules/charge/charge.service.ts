@@ -172,3 +172,21 @@ export async function webhookTransactionStopped(
     })
     .where(eq(transactions.id, existing.id));
 }
+
+/** Get price per kWh and VAT rate for a charge point (from its tenant). Used by mobile for live cost display. */
+export async function getPriceForChargePoint(chargePointId: string): Promise<{
+  pricePerKwh: number;
+  vatRate: number;
+}> {
+  const cp = await getChargePointByChargePointId(chargePointId);
+  if (!cp) {
+    throw new AppError(404, "Charge point not found");
+  }
+  const tenant = await db.query.tenants.findFirst({
+    where: eq(tenants.id, cp.tenantId),
+    columns: { pricePerKwh: true, vatRate: true },
+  });
+  const pricePerKwh = tenant?.pricePerKwh ? parseFloat(tenant.pricePerKwh) : 0;
+  const vatRate = tenant?.vatRate ? parseFloat(tenant.vatRate) : 0;
+  return { pricePerKwh, vatRate };
+}

@@ -35,6 +35,8 @@ export const translations = {
     energyUsed: 'Kullanılan Enerji',
     currentPower: 'Anlık Güç',
     estimatedCost: 'Tahmini Maliyet',
+    costFormulaHint: 'İstasyon fiyatına göre: kWh × ₺/kWh',
+    vatIncluded: 'KDV dahil',
     stopCharging: 'Şarjı Durdur',
     
     // Charging End Screen
@@ -95,6 +97,8 @@ export const translations = {
     energyUsed: 'Energy Used',
     currentPower: 'Current Power',
     estimatedCost: 'Estimated Cost',
+    costFormulaHint: 'Based on station price: kWh × ₺/kWh',
+    vatIncluded: 'VAT incl.',
     stopCharging: 'Stop Charging',
     
     // Charging End Screen
@@ -155,6 +159,8 @@ export const translations = {
     energyUsed: 'Verbrauchte Energie',
     currentPower: 'Aktuelle Leistung',
     estimatedCost: 'Geschätzte Kosten',
+    costFormulaHint: 'Nach Stationspreis: kWh × ₺/kWh',
+    vatIncluded: 'inkl. MwSt.',
     stopCharging: 'Laden stoppen',
     
     // Charging End Screen
@@ -215,6 +221,8 @@ export const translations = {
     energyUsed: 'Énergie utilisée',
     currentPower: 'Puissance actuelle',
     estimatedCost: 'Coût estimé',
+    costFormulaHint: 'Selon tarif station: kWh × ₺/kWh',
+    vatIncluded: 'TVA incl.',
     stopCharging: 'Arrêter la recharge',
     
     // Charging End Screen
@@ -275,6 +283,8 @@ export const translations = {
     energyUsed: 'الطاقة المستخدمة',
     currentPower: 'الطاقة الحالية',
     estimatedCost: 'التكلفة المقدرة',
+    costFormulaHint: 'حسب سعر المحطة: كيلوواط ساعة × ₺/كيلوواط ساعة',
+    vatIncluded: 'شامل الضريبة',
     stopCharging: 'إيقاف الشحن',
     
     // Charging End Screen

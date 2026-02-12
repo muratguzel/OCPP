@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import * as chargeService from "./charge.service.js";
+import type { GetPriceQuery } from "./charge.schema.js";
 
 export async function startCharge(
   req: Request,
@@ -43,6 +44,20 @@ export async function webhookTransactionStopped(
   try {
     await chargeService.webhookTransactionStopped(req.body);
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function getPrice(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { chargePointId } = (req.validatedQuery ?? {}) as GetPriceQuery;
+    const result = await chargeService.getPriceForChargePoint(chargePointId);
+    res.json(result);
   } catch (err) {
     next(err);
   }

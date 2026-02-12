@@ -17,6 +17,7 @@
 ## V2
 
 - transaction' ların kapanma sorunu var. transaction' lar oluşturulduğunda bazen kapanıyor bazen kapanmıyor. Nedenini araştırıp fix edecek.
+
 - User login ise aynı aynda tekrardan farklı bir telefon ile login olmaması gerekiyor. **Bu konu önemli.**
 - Socket aktif ise charging statusunde ise başka bir kullanıcı QR kodu okuttuğunda ekrana liste çıkıp şarjı başlat yerine listenin çıkmadan "Şarj İstasyonu Dolu" diye bir mesaj çıkacak. Bu konu fix edilecek.
 - Şarj olurken ekrandaki fiyat oluşturulan fiyata göre değil tahmini bir fiyata göre çalışıyor bu konu fix edilecek.

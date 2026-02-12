@@ -134,6 +134,18 @@ export async function startCharge(params: {
   });
 }
 
+/** Price per kWh and VAT rate for a charge point (tenant pricing). Used for live cost during charging. */
+export interface ChargePrice {
+  pricePerKwh: number;
+  vatRate: number;
+}
+
+export async function getChargePrice(chargePointId: string): Promise<ChargePrice> {
+  return request<ChargePrice>(
+    `/charge/price?chargePointId=${encodeURIComponent(chargePointId)}`
+  );
+}
+
 async function saveAuth(data: LoginResponse): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.accessToken);
   await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);

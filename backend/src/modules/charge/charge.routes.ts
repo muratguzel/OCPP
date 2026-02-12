@@ -5,11 +5,19 @@ import { requireRole } from "../../middleware/roleGuard.js";
 import { validate } from "../../middleware/validate.js";
 import {
   startChargeSchema,
+  getPriceQuerySchema,
   webhookTransactionStartedSchema,
   webhookTransactionStoppedSchema,
 } from "./charge.schema.js";
 
 const router = Router();
+
+/** Public: get price per kWh and VAT for a charge point (for live cost display during charging). */
+router.get(
+  "/price",
+  validate(getPriceQuerySchema, "query"),
+  chargeController.getPrice
+);
 
 router.post(
   "/start",
