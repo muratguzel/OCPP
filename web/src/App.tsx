@@ -6,6 +6,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { DashboardOverview } from '@/pages/super-admin/DashboardOverview'
 import { TenantsPage } from '@/pages/super-admin/TenantsPage'
 import { QRCodesPage } from '@/pages/super-admin/QRCodesPage'
+import { ConnectedChargePointsPage } from '@/pages/super-admin/ConnectedChargePointsPage'
 import { ChargePointsPage } from '@/pages/tenant-admin/ChargePointsPage'
 import { UsersPage } from '@/pages/tenant-admin/UsersPage'
 import { ReportsPage } from '@/pages/tenant-admin/ReportsPage'
@@ -63,6 +64,14 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['super_admin', 'admin']}>
                   <ChargePointsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="connected-charge-points"
+              element={
+                <ProtectedRoute allowedRoles={['super_admin']}>
+                  <ConnectedChargePointsPage />
                 </ProtectedRoute>
               }
             />

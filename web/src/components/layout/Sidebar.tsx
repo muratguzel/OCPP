@@ -15,6 +15,7 @@ import {
   FileText,
   QrCode,
   DollarSign,
+  Radio,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuthStore, type Role } from '@/store/auth'
@@ -57,6 +58,7 @@ export function Sidebar({
       ? [
           { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
           { path: '/charge-points', label: 'Charge Points', icon: Zap },
+          { path: '/connected-charge-points', label: 'Connected Charge Points', icon: Radio },
           { path: '/qr-codes', label: 'QR Codes', icon: QrCode },
           { path: '/pricing', label: 'Pricing', icon: DollarSign },
           { path: '/users', label: 'Users', icon: Users },

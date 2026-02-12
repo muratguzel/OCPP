@@ -87,6 +87,21 @@ services:
     depends_on:
       - backend
 
+  # OCPP simulation: çoklu sanal şarj noktası (multi_runner.ts)
+  # process.env.WS_URL öncelikli; yoksa .env_* içindeki değer kullanılır
+  simulation:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm ci && npx tsx multi_runner.ts"
+    environment:
+      WS_URL: ws://ocpp-gateway:9220
+    volumes:
+      - ./simulation:/app
+      - simulation_node_modules:/app/node_modules
+    depends_on:
+      - ocpp-gateway
+
 volumes:
   pgdata:
   redisdata:
+  simulation_node_modules:
