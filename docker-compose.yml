@@ -103,7 +103,7 @@ services:
   simulation:
     image: node:20-alpine
     working_dir: /app
-    command: sh -c "npm ci && npx tsx multi_runner.ts"
+    command: sh -c "npm install && npx tsx multi_runner.ts"
     environment:
       WS_URL: ws://ocpp-gateway:9220
     volumes:
