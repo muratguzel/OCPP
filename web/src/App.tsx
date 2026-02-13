@@ -18,6 +18,7 @@ import { TransactionsPage } from '@/pages/TransactionsPage'
 import { ChargingHistoryPage } from '@/pages/end-user/ChargingHistoryPage'
 import { BalancePage } from '@/pages/end-user/BalancePage'
 import { SavingsCalculatorPage } from '@/pages/end-user/SavingsCalculatorPage'
+import { PaymentMethodsPage } from '@/pages/end-user/PaymentMethodsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 
 const queryClient = new QueryClient()
@@ -147,7 +148,7 @@ export default function App() {
               path="portal/payment"
               element={
                 <ProtectedRoute allowedRoles={['user']}>
-                  <BalancePage />
+                  <PaymentMethodsPage />
                 </ProtectedRoute>
               }
             />
