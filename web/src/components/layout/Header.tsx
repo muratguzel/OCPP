@@ -1,4 +1,4 @@
-import { Search, LogOut, User, Bell, HelpCircle } from 'lucide-react'
+import { Search, LogOut, User, Bell, HelpCircle, Menu } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { useTenantFilterStore } from '@/store/tenantFilter'
 import { useQuery } from '@tanstack/react-query'
@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
-export function Header() {
+export function Header({ onMobileMenuToggle }: { onMobileMenuToggle: () => void }) {
   const { user, clearAuth } = useAuthStore()
   const { selectedTenantId, setSelectedTenantId } = useTenantFilterStore()
 
@@ -38,9 +38,18 @@ export function Header() {
   const initials = user?.name?.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) ?? 'U'
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-[#0F172A] bg-white px-6">
+    <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b border-[#0F172A] bg-white px-4 sm:px-6">
+      <Button
+        variant="ghost"
+        size="icon"
+        className="lg:hidden shrink-0"
+        onClick={onMobileMenuToggle}
+        aria-label="Open menu"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
       {(user?.role === 'super_admin' || user?.role === 'admin') && (
-        <div className="flex items-center gap-2">
+        <div className="hidden sm:flex items-center gap-2">
           <span className="text-xs font-medium uppercase tracking-wider text-[#64748B]">Tenant:</span>
           {user?.role === 'super_admin' && tenants.length > 0 ? (
             <select
@@ -60,7 +69,7 @@ export function Header() {
           )}
         </div>
       )}
-      <div className="relative flex-1 max-w-md">
+      <div className="relative hidden sm:block flex-1 max-w-md">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B]" />
         <input
           type="search"
@@ -68,11 +77,11 @@ export function Header() {
           className="h-9 w-full rounded border border-[#0F172A] bg-slate-50 pl-9 pr-4 text-sm placeholder:text-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
         />
       </div>
-      <div className="flex items-center gap-1">
+      <div className="ml-auto flex items-center gap-1">
         <Button variant="ghost" size="icon" className="rounded-full">
           <Bell className="h-5 w-5 text-[#64748B]" />
         </Button>
-        <Button variant="ghost" size="icon" className="rounded-full">
+        <Button variant="ghost" size="icon" className="hidden sm:inline-flex rounded-full">
           <HelpCircle className="h-5 w-5 text-[#64748B]" />
         </Button>
         <DropdownMenu>
