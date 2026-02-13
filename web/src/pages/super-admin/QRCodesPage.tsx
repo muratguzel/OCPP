@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { QRCodeSVG } from 'qrcode.react'
+import { QueryError } from '@/components/QueryError'
 
 interface ChargePoint {
   id: string
@@ -27,7 +28,7 @@ export function QRCodesPage() {
     queryFn: () => api.get('/tenants').then((r) => r.data),
   })
 
-  const { data: chargePoints = [], isLoading } = useQuery({
+  const { data: chargePoints = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['charge-points', tenantId],
     queryFn: () =>
       api
@@ -78,6 +79,8 @@ export function QRCodesPage() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {isLoading ? (
             <p className="text-[#64748B]">Loading charge points...</p>
+          ) : isError ? (
+            <QueryError message="Failed to load charge points." onRetry={refetch} />
           ) : chargePoints.length === 0 ? (
             <p className="text-[#64748B]">No charge points for this tenant.</p>
           ) : (

@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { QueryError } from '@/components/QueryError'
 
 const placeholderData = [
   { date: '-', hour: '00:00', kWh: 0 },
@@ -27,7 +28,7 @@ export function ReportsPage() {
 
   const effectiveTenantId = user?.role === 'super_admin' ? selectedTenantId ?? undefined : undefined
 
-  const { data: usageData = [] } = useQuery({
+  const { data: usageData = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['stats-usage', period, effectiveTenantId],
     queryFn: () =>
       api
@@ -76,7 +77,12 @@ export function ReportsPage() {
           </button>
         </div>
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
+      {isLoading ? (
+        <p className="text-[#64748B]">Loading reports...</p>
+      ) : isError ? (
+        <QueryError message="Failed to load usage data." onRetry={refetch} />
+      ) : null}
+      <div className="grid gap-6 lg:grid-cols-2" style={{ display: isLoading || isError ? 'none' : undefined }}>
         <Card>
           <CardHeader>
             <CardTitle>Daily Usage (kWh)</CardTitle>

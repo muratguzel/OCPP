@@ -31,6 +31,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { StatusBadge } from '@/components/StatusBadge'
+import { QueryError } from '@/components/QueryError'
 import { Plus, Trash2 } from 'lucide-react'
 
 export function UsersPage() {
@@ -41,7 +42,7 @@ export function UsersPage() {
 
   const effectiveTenantId = user?.role === 'super_admin' ? selectedTenantId ?? undefined : undefined
 
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['users', effectiveTenantId],
     queryFn: () =>
       api
@@ -91,6 +92,10 @@ export function UsersPage() {
         <CardContent>
           {isLoading ? (
             <p className="text-[#64748B]">Loading...</p>
+          ) : isError ? (
+            <QueryError message="Failed to load users." onRetry={refetch} />
+          ) : users.length === 0 ? (
+            <p className="py-8 text-center text-[#64748B]">No users yet.</p>
           ) : (
             <Table>
               <TableHeader>

@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/table'
 import { MapWidget } from '@/components/MapWidget'
 import { StatusBadge } from '@/components/StatusBadge'
+import { QueryError } from '@/components/QueryError'
 import { format, subDays } from 'date-fns'
 
 const CARD_ICON_BG = [
@@ -47,7 +48,12 @@ export function DashboardOverview() {
     end: new Date(),
   }
 
-  const { data: stats } = useQuery({
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+    refetch: refetchStats,
+  } = useQuery({
     queryKey: ['stats-overview', effectiveTenantId],
     queryFn: () =>
       api
@@ -64,7 +70,12 @@ export function DashboardOverview() {
     enabled: !isSuperAdmin,
   })
 
-  const { data: transactions = [] } = useQuery({
+  const {
+    data: transactions = [],
+    isLoading: txLoading,
+    isError: txError,
+    refetch: refetchTx,
+  } = useQuery({
     queryKey: ['transactions', effectiveTenantId],
     queryFn: () =>
       api
@@ -117,6 +128,13 @@ export function DashboardOverview() {
         </div>
       </div>
 
+      {statsLoading ? (
+        <div className="py-8 text-center text-[#64748B]">Loading dashboard...</div>
+      ) : statsError ? (
+        <QueryError message="Failed to load dashboard stats." onRetry={refetchStats} />
+      ) : null}
+
+      {!statsLoading && !statsError && (
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((card) => {
           const { title, value, icon: Icon, iconBg } = card
@@ -150,6 +168,7 @@ export function DashboardOverview() {
           )
         })}
       </div>
+      )}
 
       {isSuperAdmin && <MapWidget />}
 
@@ -176,7 +195,19 @@ export function DashboardOverview() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {recentTx.length === 0 ? (
+              {txLoading ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="py-8 text-center text-[#64748B]">
+                    Loading...
+                  </TableCell>
+                </TableRow>
+              ) : txError ? (
+                <TableRow>
+                  <TableCell colSpan={6}>
+                    <QueryError message="Failed to load transactions." onRetry={refetchTx} />
+                  </TableCell>
+                </TableRow>
+              ) : recentTx.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-8 text-center text-[#64748B]">
                     No transactions yet.
