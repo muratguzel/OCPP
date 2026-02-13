@@ -15,6 +15,7 @@ EV şarj istasyonu yönetim sistemi — monorepo. Backend API, OCPP Gateway, Web
 - [Ortam Değişkenleri](#ortam-değişkenleri)
 - [Veritabanı Migrasyonları](#veritabanı-migrasyonları)
 - [Sadece Yerel Geliştirme (Docker olmadan)](#sadece-yerel-geliştirme-docker-olmadan)
+- [Mobil Uygulama (Kurulum ve Test)](#mobil-uygulama-kurulum-ve-test)
 - [Sunucuya Deploy (Belirli IP ile)](#sunucuya-deploy-belirli-ip-ile)
 
 ---
@@ -254,6 +255,118 @@ Not: Backend’i 4000’de çalıştırmak için `backend/.env` içinde `PORT=40
 
 ---
 
+## Mobil Uygulama (Kurulum ve Test)
+
+Projeyi pull ettikten sonra mobil uygulamayı yerelde çalıştırmak için aşağıdaki adımları izleyin.
+
+### Gereksinimler
+
+- **Node.js 18+**
+- **npm** veya **yarn**
+- **Expo Go** uygulaması (fiziksel cihazda test için) veya **iOS Simulator** / **Android Emulator**
+
+### 1. Bağımlılıkları yükleme
+
+```bash
+cd mobile
+npm install
+```
+
+veya kilidi kullanmak için:
+
+```bash
+cd mobile
+npm ci
+```
+
+### 2. Ortam değişkenlerini ayarlama
+
+`mobile/.env.example` dosyasını kopyalayıp `.env` oluşturun (henüz yoksa):
+
+```bash
+cp .env.example .env
+```
+
+`.env` içinde API ve OCPP Gateway adreslerini ortamınıza göre düzenleyin:
+
+| Ortam | EXPO_PUBLIC_BACKEND_API_URL | EXPO_PUBLIC_OCPP_GATEWAY_URL |
+|-------|-----------------------------|------------------------------|
+| **iOS Simulator** | `http://localhost:4000` | `http://localhost:3000` |
+| **Android Emulator** | `http://10.0.2.2:4000` | `http://10.0.2.2:3000` |
+| **Fiziksel cihaz** | `http://BILGISAYAR_IP:4000` | `http://BILGISAYAR_IP:3000` |
+
+Fiziksel cihazda test ederken bilgisayarınızın yerel IP’sini (örn. `192.168.1.10`) kullanın; cihaz ve bilgisayar aynı ağda olmalıdır.
+
+### 3. Uygulamayı çalıştırma
+
+Backend ve OCPP Gateway’in çalışıyor olduğundan emin olun (Docker ile `docker compose up -d` veya yerelde ayrı terminallerde).
+
+```bash
+cd mobile
+npm start
+```
+
+Expo Dev Tools açılır. Sonrasında:
+
+- **iOS Simulator:** Terminalde `i` tuşuna basın veya `npm run ios` çalıştırın (macOS + Xcode gerekir).
+- **Android Emulator:** Terminalde `a` tuşuna basın veya `npm run android` çalıştırın (Android Studio + emülatör gerekir).
+- **Fiziksel cihaz:** Telefona **Expo Go** yükleyin; QR kodu Expo Go ile tarayın veya aynı ağdaki “Enter URL manually” ile gösterilen adresi girin.
+
+### 4. Test etme
+
+1. Uygulama açıldığında **giriş** ekranı gelir.
+2. Seed ile oluşturulan hesap bilgileriyle giriş yapın:
+   - **E-posta:** `admin@sarjmodul.com`
+   - **Şifre:** `Admin123!`
+3. Giriş başarılıysa ana ekrana (şarj noktaları / işlemler vb.) geçiş yapılır.
+4. Backend erişilemiyorsa “Network request failed” benzeri hata alırsınız; `.env` adreslerini ve backend’in ayakta olduğunu kontrol edin.
+
+### Özet: Mobil komutlar
+
+| Amaç | Komut |
+|------|--------|
+| Bağımlılık yükle | `cd mobile && npm install` |
+| Geliştirme sunucusu | `cd mobile && npm start` |
+| iOS’ta aç | `cd mobile && npm run ios` |
+| Android’de aç | `cd mobile && npm run android` |
+
+`.env` değiştirdikten sonra Expo’yu yeniden başlatın (`Ctrl+C` ile durdurup tekrar `npm start`).
+
+### Sık karşılaşılan hatalar
+
+**`Cannot find module './buildCacheProvider'`** (Expo start sırasında)
+
+Bu hata normal değildir; genelde `node_modules` veya önbelleğin bozuk/uyumsuz olmasından kaynaklanır. Şunları deneyin:
+
+1. **Temiz kurulum** (çoğu durumda yeterli):
+
+```bash
+cd mobile
+rm -rf node_modules package-lock.json
+npm install
+npm start
+```
+
+2. Hata sürerse **Expo bağımlılıklarını hizala**:
+
+```bash
+cd mobile
+npx expo install --fix
+npm start
+```
+
+3. Yine olmazsa **npm önbelleğini temizleyip** tekrar kurun:
+
+```bash
+cd mobile
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm install
+npm start
+```
+
+---
+
 ## Sunucuya Deploy (Belirli IP ile)
 
 Projeyi bir sunucuya (örn. **209.38.226.171**) atıp `docker compose up` ile çalıştırdığınızda, web arayüzü ve **mobil uygulama**’nın doğru adreslere istek atması için aşağıdakileri yapın.
@@ -313,6 +426,7 @@ Fiziksel şarj noktaları OCPP WebSocket ile bağlanacaksa **9220** portunun da 
 | Arka planda başlat | `docker compose up -d --build` |
 | Migrasyon uygula | `docker compose exec backend npm run db:migrate` |
 | Seed çalıştır | `docker compose exec backend npm run seed` |
+| Mobil uygulama başlat | `cd mobile && npm install && npm start` |
 | Durdur | `docker compose down` |
 | Logları izle | `docker compose logs -f [service_adı]` |
 
