@@ -1,4 +1,4 @@
-import { Search, LogOut, User, Bell, HelpCircle, Menu } from 'lucide-react'
+import { LogOut, User, Menu } from 'lucide-react'
 import { useAuthStore } from '@/store/auth'
 import { useTenantFilterStore } from '@/store/tenantFilter'
 import { useQuery } from '@tanstack/react-query'
@@ -69,21 +69,7 @@ export function Header({ onMobileMenuToggle }: { onMobileMenuToggle: () => void 
           )}
         </div>
       )}
-      <div className="relative hidden sm:block flex-1 max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#64748B]" />
-        <input
-          type="search"
-          placeholder="Search sessions, units..."
-          className="h-9 w-full rounded border border-[#0F172A] bg-slate-50 pl-9 pr-4 text-sm placeholder:text-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
-        />
-      </div>
       <div className="ml-auto flex items-center gap-1">
-        <Button variant="ghost" size="icon" className="rounded-full">
-          <Bell className="h-5 w-5 text-[#64748B]" />
-        </Button>
-        <Button variant="ghost" size="icon" className="hidden sm:inline-flex rounded-full">
-          <HelpCircle className="h-5 w-5 text-[#64748B]" />
-        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="rounded-full">

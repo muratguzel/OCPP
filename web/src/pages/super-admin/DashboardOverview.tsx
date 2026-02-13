@@ -121,7 +121,7 @@ export function DashboardOverview() {
               {format(dateRange.start, 'MMM d')} - {format(dateRange.end, 'MMM d, yyyy')}
             </span>
           </div>
-          <Button>
+          <Button disabled title="Coming soon">
             <Download className="h-4 w-4" />
             Report
           </Button>
