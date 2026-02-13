@@ -1,6 +1,10 @@
 import { Request, Response, NextFunction } from "express";
 import * as authService from "./auth.service.js";
-import type { LoginInput, RefreshInput } from "./auth.schema.js";
+import type {
+  LoginInput,
+  RefreshInput,
+  ChangePasswordInput,
+} from "./auth.schema.js";
 
 export async function login(
   req: Request,
@@ -52,6 +56,24 @@ export async function getMe(
   try {
     const user = await authService.getMe(req.user!.userId);
     res.json(user);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function changePassword(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { currentPassword, newPassword } = req.body as ChangePasswordInput;
+    await authService.changePassword(
+      req.user!.userId,
+      currentPassword,
+      newPassword
+    );
+    res.json({ message: "Password changed successfully" });
   } catch (err) {
     next(err);
   }

@@ -1,7 +1,13 @@
 /**
  * StatusNotification handler - OCPP 1.6 (connectorId, errorCode, status) and 2.x (evseId, connectorId, connectorStatus, timestamp)
+ * Fallback: Connector Available olduğunda aktif transaction varsa webhook tetiklenir (TransactionEvent Ended gelmeyen cihazlar için).
  */
-import { updateConnectorStatus } from '../../store/chargePoints.js';
+import {
+  updateConnectorStatus,
+  getActiveTransactionForConnector,
+  closeTransaction,
+} from '../../store/chargePoints.js';
+import { notifyTransactionStopped } from '../../backend/client.js';
 
 type StatusParams = {
   connectorId: number;
@@ -20,5 +26,22 @@ export function statusNotification(params: StatusParams, chargePointId: string):
     timestamp: params.timestamp,
     evseId: params.evseId,
   });
+
+  // Fallback: Connector Available olduğunda, TransactionEvent Ended gelmediyse transaction'ı kapat
+  if (status === 'Available') {
+    const activeTx = getActiveTransactionForConnector(chargePointId, connectorId);
+    if (activeTx) {
+      const endTime = params.timestamp ?? new Date().toISOString();
+      const closed = closeTransaction(chargePointId, activeTx.transactionId, undefined, endTime);
+      if (closed) {
+        notifyTransactionStopped({
+          chargePointId,
+          transactionId: activeTx.transactionId,
+          endTime,
+        });
+      }
+    }
+  }
+
   return {};
 }

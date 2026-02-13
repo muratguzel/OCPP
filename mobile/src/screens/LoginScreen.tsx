@@ -7,11 +7,15 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { LanguageSelector } from '../components/LanguageSelector';
 import type { RootStackParamList } from '../types/navigation';
 
@@ -19,12 +23,34 @@ type Nav = NativeStackNavigationProp<RootStackParamList, 'Login'>;
 
 export const LoginScreen: React.FC = () => {
   const { t } = useLanguage();
+  const { login } = useAuth();
   const navigation = useNavigation<Nav>();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = () => {
-    navigation.navigate('QR');
+  const handleSubmit = async () => {
+    if (!email.trim() || !password) {
+      setError(t('loginErrorRequired'));
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await login(email.trim(), password);
+      navigation.replace('QR');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (msg === 'SESSION_EXPIRED') {
+        setError(t('loginErrorSession'));
+      } else {
+        setError(msg || t('loginErrorInvalid'));
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -32,7 +58,7 @@ export const LoginScreen: React.FC = () => {
       colors={['#000000', '#111827', '#1f2937']}
       style={styles.gradient}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <LanguageSelector />
       </View>
       <KeyboardAvoidingView
@@ -71,10 +97,16 @@ export const LoginScreen: React.FC = () => {
           <TouchableOpacity style={styles.forgot}>
             <Text style={styles.forgotText}>{t('forgotPassword')}</Text>
           </TouchableOpacity>
+          {error ? (
+            <View style={styles.errorBox}>
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+          ) : null}
           <TouchableOpacity
-            style={styles.loginButton}
+            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
             onPress={handleSubmit}
             activeOpacity={0.9}
+            disabled={loading}
           >
             <LinearGradient
               colors={['#06b6d4', '#2563eb']}
@@ -82,7 +114,11 @@ export const LoginScreen: React.FC = () => {
               end={{ x: 1, y: 0 }}
               style={styles.loginButtonGradient}
             >
-              <Text style={styles.loginButtonText}>{t('login')}</Text>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.loginButtonText}>{t('login')}</Text>
+              )}
             </LinearGradient>
           </TouchableOpacity>
         </View>
@@ -94,7 +130,8 @@ export const LoginScreen: React.FC = () => {
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
   header: {
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingBottom: 24,
     alignItems: 'flex-end',
   },
   content: {
@@ -148,6 +185,16 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   forgotText: { color: '#9ca3af', fontSize: 14 },
+  errorBox: {
+    marginBottom: 16,
+    padding: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+  },
+  errorText: { color: '#fca5a5', fontSize: 14 },
+  loginButtonDisabled: { opacity: 0.7 },
   loginButton: {
     width: '100%',
     borderRadius: 16,

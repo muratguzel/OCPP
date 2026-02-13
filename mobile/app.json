@@ -26,6 +26,15 @@
     "scheme": "sarjmodul",
     "extra": {
       "eas": {}
-    }
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow $(PRODUCT_NAME) to access your camera for QR scanning"
+        }
+      ]
+    ]
   }
 }

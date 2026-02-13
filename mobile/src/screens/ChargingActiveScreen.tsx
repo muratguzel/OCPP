@@ -8,9 +8,11 @@ import {
   Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { getTransactions, getMeters } from '../api/ocppGateway';
+import { getChargePrice } from '../api/backendApi';
 import { parseEnergyKwh, parsePowerKw } from '../utils/meterParser';
 import { PRICE_PER_KWH } from '../constants/config';
 import type { MetersResponse } from '../api/ocppGateway';
@@ -34,12 +36,34 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
   onStopCharging,
 }) => {
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [transactionId, setTransactionId] = useState<number | string | null>(null);
   const [startTime, setStartTime] = useState<Date>(() => new Date());
   const [meters, setMeters] = useState<MetersResponse | null>(null);
   const [loadingTx, setLoadingTx] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pricePerKwh, setPricePerKwh] = useState<number | null>(null);
+  const [vatRate, setVatRate] = useState<number>(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Fetch tenant price for this charge point (for accurate cost display)
+  useEffect(() => {
+    let cancelled = false;
+    getChargePrice(chargePointId)
+      .then((p) => {
+        if (!cancelled) {
+          setPricePerKwh(p.pricePerKwh);
+          setVatRate(p.vatRate ?? 0);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPricePerKwh(null);
+          setVatRate(0);
+        }
+      });
+    return () => { cancelled = true; };
+  }, [chargePointId]);
 
   // Resolve active transaction
   useEffect(() => {
@@ -86,7 +110,9 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
   );
   const energyKwh = meters ? parseEnergyKwh(meters) : 0;
   const powerKw = meters ? parsePowerKw(meters) : null;
-  const cost = energyKwh * PRICE_PER_KWH;
+  const unitPrice = pricePerKwh ?? PRICE_PER_KWH;
+  const subtotal = energyKwh * unitPrice;
+  const cost = subtotal * (1 + vatRate / 100);
 
   const formatDuration = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -133,7 +159,7 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
       colors={['#000000', '#111827', '#000000']}
       style={styles.gradient}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <LanguageSelector />
       </View>
       <View style={styles.content}>
@@ -160,9 +186,17 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
             </Text>
           </View>
           <View style={[styles.metricCard, styles.costCard]}>
-            <Text style={styles.metricIcon}>💰</Text>
-            <Text style={styles.metricLabelCost}>{t('estimatedCost')}</Text>
-            <Text style={styles.metricValue}>₺{cost.toFixed(2)}</Text>
+            <View style={styles.costCardContent}>
+              <View style={styles.costRow}>
+                <Text style={styles.metricIcon}>💰</Text>
+                <Text style={styles.metricLabelCost}>{t('estimatedCost')}</Text>
+                <Text style={styles.metricValue}>₺{cost.toFixed(2)}</Text>
+              </View>
+              <Text style={styles.costFormula} numberOfLines={2}>
+                {energyKwh.toFixed(2)} kWh × ₺{unitPrice.toFixed(2)}/kWh
+                {vatRate > 0 ? ` (${t('vatIncluded')} %${vatRate})` : ''}
+              </Text>
+            </View>
           </View>
         </View>
         <TouchableOpacity
@@ -195,7 +229,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   retryText: { color: '#fff' },
-  header: { padding: 24, alignItems: 'flex-end' },
+  header: { paddingHorizontal: 24, paddingBottom: 24, alignItems: 'flex-end' },
   content: {
     flex: 1,
     alignItems: 'center',
@@ -230,6 +264,13 @@ const styles = StyleSheet.create({
   costCard: {
     backgroundColor: 'rgba(6, 182, 212, 0.1)',
     borderColor: 'rgba(34, 211, 238, 0.3)',
+  },
+  costCardContent: { flex: 1 },
+  costRow: { flexDirection: 'row', alignItems: 'center' },
+  costFormula: {
+    marginTop: 8,
+    fontSize: 12,
+    color: 'rgba(34, 211, 238, 0.85)',
   },
   metricLabelCost: { flex: 1, color: '#22d3ee', fontSize: 14 },
   stopButton: {

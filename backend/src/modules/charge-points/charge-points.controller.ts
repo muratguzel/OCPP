@@ -86,8 +86,7 @@ export async function deleteChargePoint(
   try {
     const cp = await chargePointsService.deleteChargePoint(
       req.params.id,
-      req.user!.role as Role,
-      req.user!.tenantId
+      req.user!.role as Role
     );
     res.json(cp);
   } catch (err) {

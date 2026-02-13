@@ -31,10 +31,10 @@ router.post(
 // Update user - All authenticated users (ownership checked in service)
 router.patch("/:id", validate(updateUserSchema), usersController.updateUser);
 
-// Delete (deactivate) user - Admin and Super Admin only
+// Delete (deactivate) user - Super Admin only
 router.delete(
   "/:id",
-  requireRole("super_admin", "admin"),
+  requireRole("super_admin"),
   usersController.deleteUser
 );
 

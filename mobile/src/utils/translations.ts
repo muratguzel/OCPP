@@ -9,6 +9,9 @@ export const translations = {
     password: 'Şifre',
     login: 'Giriş Yap',
     forgotPassword: 'Şifremi Unuttum?',
+    loginErrorRequired: 'E-posta ve şifre gerekli',
+    loginErrorInvalid: 'Geçersiz e-posta veya şifre',
+    loginErrorSession: 'Oturum süresi doldu. Tekrar giriş yapın.',
     
     // QR Scanner Screen
     scanQR: 'QR Kod Okut',
@@ -32,6 +35,8 @@ export const translations = {
     energyUsed: 'Kullanılan Enerji',
     currentPower: 'Anlık Güç',
     estimatedCost: 'Tahmini Maliyet',
+    costFormulaHint: 'İstasyon fiyatına göre: kWh × ₺/kWh',
+    vatIncluded: 'KDV dahil',
     stopCharging: 'Şarjı Durdur',
     
     // Charging End Screen
@@ -55,6 +60,7 @@ export const translations = {
     back: 'Geri',
     close: 'Kapat',
     retry: 'Yeniden Dene',
+    logout: 'Çıkış Yap',
     connectionErrorHint: 'Sunucuya ulaşılamıyor. OCPP Gateway çalışıyor mu? Fiziksel cihazda .env ile EXPO_PUBLIC_OCPP_GATEWAY_URL ayarlayın (örn. http://BILGISAYAR_IP:3000).',
   },
   en: {
@@ -65,6 +71,9 @@ export const translations = {
     password: 'Password',
     login: 'Login',
     forgotPassword: 'Forgot Password?',
+    loginErrorRequired: 'Email and password required',
+    loginErrorInvalid: 'Invalid email or password',
+    loginErrorSession: 'Session expired. Please log in again.',
     
     // QR Scanner Screen
     scanQR: 'Scan QR Code',
@@ -88,6 +97,8 @@ export const translations = {
     energyUsed: 'Energy Used',
     currentPower: 'Current Power',
     estimatedCost: 'Estimated Cost',
+    costFormulaHint: 'Based on station price: kWh × ₺/kWh',
+    vatIncluded: 'VAT incl.',
     stopCharging: 'Stop Charging',
     
     // Charging End Screen
@@ -111,6 +122,7 @@ export const translations = {
     back: 'Back',
     close: 'Close',
     retry: 'Retry',
+    logout: 'Log Out',
     connectionErrorHint: 'Cannot reach server. Is OCPP Gateway running? On a physical device, set EXPO_PUBLIC_OCPP_GATEWAY_URL in .env (e.g. http://YOUR_IP:3000).',
   },
   de: {
@@ -121,6 +133,9 @@ export const translations = {
     password: 'Passwort',
     login: 'Anmelden',
     forgotPassword: 'Passwort vergessen?',
+    loginErrorRequired: 'E-Mail und Passwort erforderlich',
+    loginErrorInvalid: 'Ungültige E-Mail oder Passwort',
+    loginErrorSession: 'Sitzung abgelaufen. Bitte erneut anmelden.',
     
     // QR Scanner Screen
     scanQR: 'QR-Code scannen',
@@ -144,6 +159,8 @@ export const translations = {
     energyUsed: 'Verbrauchte Energie',
     currentPower: 'Aktuelle Leistung',
     estimatedCost: 'Geschätzte Kosten',
+    costFormulaHint: 'Nach Stationspreis: kWh × ₺/kWh',
+    vatIncluded: 'inkl. MwSt.',
     stopCharging: 'Laden stoppen',
     
     // Charging End Screen
@@ -167,6 +184,7 @@ export const translations = {
     back: 'Zurück',
     close: 'Schließen',
     retry: 'Erneut versuchen',
+    logout: 'Abmelden',
     connectionErrorHint: 'Server nicht erreichbar. Läuft das OCPP Gateway? Auf Gerät EXPO_PUBLIC_OCPP_GATEWAY_URL in .env setzen.',
   },
   fr: {
@@ -177,6 +195,9 @@ export const translations = {
     password: 'Mot de passe',
     login: 'Connexion',
     forgotPassword: 'Mot de passe oublié?',
+    loginErrorRequired: 'E-mail et mot de passe requis',
+    loginErrorInvalid: 'E-mail ou mot de passe invalide',
+    loginErrorSession: 'Session expirée. Veuillez vous reconnecter.',
     
     // QR Scanner Screen
     scanQR: 'Scanner le code QR',
@@ -200,6 +221,8 @@ export const translations = {
     energyUsed: 'Énergie utilisée',
     currentPower: 'Puissance actuelle',
     estimatedCost: 'Coût estimé',
+    costFormulaHint: 'Selon tarif station: kWh × ₺/kWh',
+    vatIncluded: 'TVA incl.',
     stopCharging: 'Arrêter la recharge',
     
     // Charging End Screen
@@ -223,6 +246,7 @@ export const translations = {
     back: 'Retour',
     close: 'Fermer',
     retry: 'Réessayer',
+    logout: 'Déconnexion',
     connectionErrorHint: 'Serveur inaccessible. Le gateway OCPP est-il démarré? Sur appareil, définir EXPO_PUBLIC_OCPP_GATEWAY_URL dans .env.',
   },
   ar: {
@@ -233,6 +257,9 @@ export const translations = {
     password: 'كلمة المرور',
     login: 'تسجيل الدخول',
     forgotPassword: 'نسيت كلمة المرور؟',
+    loginErrorRequired: 'البريد الإلكتروني وكلمة المرور مطلوبان',
+    loginErrorInvalid: 'البريد الإلكتروني أو كلمة المرور غير صالحة',
+    loginErrorSession: 'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.',
     
     // QR Scanner Screen
     scanQR: 'مسح رمز الاستجابة السريعة',
@@ -256,6 +283,8 @@ export const translations = {
     energyUsed: 'الطاقة المستخدمة',
     currentPower: 'الطاقة الحالية',
     estimatedCost: 'التكلفة المقدرة',
+    costFormulaHint: 'حسب سعر المحطة: كيلوواط ساعة × ₺/كيلوواط ساعة',
+    vatIncluded: 'شامل الضريبة',
     stopCharging: 'إيقاف الشحن',
     
     // Charging End Screen
@@ -279,6 +308,7 @@ export const translations = {
     back: 'رجوع',
     close: 'إغلاق',
     retry: 'إعادة المحاولة',
+    logout: 'تسجيل الخروج',
     connectionErrorHint: 'لا يمكن الوصول إلى الخادم. هل بوابة OCPP تعمل؟ على الجهاز قم بتعيين EXPO_PUBLIC_OCPP_GATEWAY_URL في .env.',
   },
 };

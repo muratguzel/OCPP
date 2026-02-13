@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../config/database.js";
 import { redis } from "../../config/redis.js";
 import { users, tenants } from "../../config/schema.js";
-import { comparePassword } from "../../utils/password.js";
+import { comparePassword, hashPassword } from "../../utils/password.js";
 import {
   signAccessToken,
   signRefreshToken,
@@ -111,6 +111,32 @@ export async function refresh(refreshToken: string) {
 export async function logout(userId: string, refreshToken: string) {
   const key = buildRefreshKey(userId, refreshToken);
   await redis.del(key);
+}
+
+export async function changePassword(
+  userId: string,
+  currentPassword: string,
+  newPassword: string
+) {
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+  });
+
+  if (!user || !user.isActive) {
+    throw new AppError(404, "User not found");
+  }
+
+  const valid = await comparePassword(currentPassword, user.password);
+  if (!valid) {
+    throw new AppError(401, "Current password is incorrect");
+  }
+
+  const hashedPassword = await hashPassword(newPassword);
+
+  await db
+    .update(users)
+    .set({ password: hashedPassword, updatedAt: new Date() })
+    .where(eq(users.id, userId));
 }
 
 export async function getMe(userId: string) {

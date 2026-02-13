@@ -9,6 +9,9 @@ export async function listTenants() {
     columns: {
       id: true,
       name: true,
+      isSuspended: true,
+      pricePerKwh: true,
+      vatRate: true,
       createdAt: true,
       updatedAt: true,
     },
@@ -40,12 +43,17 @@ export async function createTenant(input: CreateTenantInput) {
 }
 
 export async function updateTenant(id: string, input: UpdateTenantInput) {
+  const updateData: Record<string, unknown> = { updatedAt: new Date() };
+  if (input.name !== undefined) updateData.name = input.name;
+  if (input.isSuspended !== undefined) updateData.isSuspended = input.isSuspended;
+  if (input.pricePerKwh !== undefined)
+    updateData.pricePerKwh = input.pricePerKwh.toString();
+  if (input.vatRate !== undefined)
+    updateData.vatRate = input.vatRate.toString();
+
   const [updated] = await db
     .update(tenants)
-    .set({
-      name: input.name,
-      updatedAt: new Date(),
-    })
+    .set(updateData)
     .where(eq(tenants.id, id))
     .returning();
 
@@ -56,6 +64,10 @@ export async function updateTenant(id: string, input: UpdateTenantInput) {
   return updated;
 }
 
+/**
+ * Tenant'ı siler. Veritabanı FK cascade sayesinde bu tenant'a bağlı
+ * tüm kayıtlar da silinir: users, charge_points, transactions.
+ */
 export async function deleteTenant(id: string) {
   const [deleted] = await db
     .delete(tenants)

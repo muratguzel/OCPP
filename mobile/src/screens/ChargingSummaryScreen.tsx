@@ -4,6 +4,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSelector } from '../components/LanguageSelector';
 import type { RootStackParamList } from '../types/navigation';
@@ -16,6 +17,7 @@ export const ChargingSummaryScreen: React.FC = () => {
   const { t, isRTL } = useLanguage();
   const route = useRoute<Route>();
   const navigation = useNavigation<Nav>();
+  const insets = useSafeAreaInsets();
   const chargingData = route.params?.chargingData;
   if (!chargingData) return null;
   const { duration, energyUsed, cost, startTime } = chargingData;
@@ -40,7 +42,7 @@ export const ChargingSummaryScreen: React.FC = () => {
       colors={['#000000', '#111827', '#1f2937']}
       style={styles.gradient}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <LanguageSelector />
       </View>
       <View style={styles.headerTitle}>
@@ -119,7 +121,7 @@ export const ChargingSummaryScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
-  header: { padding: 24, alignItems: 'flex-end' },
+  header: { paddingHorizontal: 24, paddingBottom: 24, alignItems: 'flex-end' },
   headerTitle: { paddingHorizontal: 24, paddingBottom: 24, alignItems: 'center' },
   successIconWrap: { marginBottom: 16 },
   successIcon: {

@@ -16,6 +16,8 @@ if (!DATABASE_URL) {
 const email = process.env.SEED_EMAIL || "admin@sarjmodul.com";
 const password = process.env.SEED_PASSWORD || "Admin123!";
 const name = process.env.SEED_NAME || "Super Admin";
+const numaraTaj = process.env.SEED_NUMARATAJ || "SA001";
+const phone = process.env.SEED_PHONE || "9000000000";
 
 async function seed() {
   const client = postgres(DATABASE_URL!);
@@ -44,6 +46,8 @@ async function seed() {
     name,
     role: "super_admin",
     tenantId: null,
+    numaraTaj,
+    phone,
   });
 
   console.log(`Super admin created: ${email}`);

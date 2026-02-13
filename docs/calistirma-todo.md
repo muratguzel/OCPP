@@ -17,6 +17,7 @@ Projeyi ayağa kaldırmak için yapman gereken adımlar. **Docker kullanıyorsan
 **Erişim:**
 - Backend API: http://localhost:4000 (örn. http://localhost:4000/api/health)
 - OCPP Gateway HTTP: http://localhost:3000
+- Web Dashboard: http://localhost:5173
 - OCPP WebSocket: ws://localhost:9220
 - PostgreSQL: localhost:5432 (kullanıcı: postgres, şifre: postgres, DB: sarjmodul)
 - Redis: localhost:6379
@@ -48,6 +49,14 @@ Projeyi ayağa kaldırmak için yapman gereken adımlar. **Docker kullanıyorsan
 - [ ] `docker compose exec backend npx tsx src/seed.ts` ile Super Admin’i oluşturdum
 - [ ] http://localhost:4000/api/health ile backend’i test ettim
 - [ ] Giriş için: POST http://localhost:4000/api/auth/login — body: `{"email":"admin@sarjmodul.com","password":"Admin123!"}`
+- [ ] Mobil uygulama: `.env` içinde `EXPO_PUBLIC_BACKEND_API_URL=http://localhost:4000` (fiziksel cihazda bilgisayar IP'si)
+
+**"Şarj başlat" HTML/JSON hatası:** Backend, OCPP Gateway'e ulaşamıyorsa bu hata oluşur. Kontrol:
+```bash
+docker compose ps  # ocpp-gateway çalışıyor mu?
+docker compose exec backend curl -s http://ocpp-gateway:3000/health  # JSON dönmeli
+```
+ocpp-gateway çalışmıyorsa `docker compose up` ile tüm servisleri yeniden başlat.
 
 ## Özet kontrol listesi (Lokal)
 

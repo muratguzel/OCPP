@@ -13,6 +13,8 @@ const userListColumns = {
   name: true,
   role: true,
   tenantId: true,
+  numaraTaj: true,
+  phone: true,
   isActive: true,
   createdById: true,
   createdAt: true,
@@ -60,6 +62,8 @@ export async function getUserById(
       name: true,
       role: true,
       tenantId: true,
+      numaraTaj: true,
+      phone: true,
       isActive: true,
       createdById: true,
       createdAt: true,
@@ -129,12 +133,18 @@ export async function createUser(
     tenantId = creatorTenantId ?? null;
   }
 
-  const existing = await db.query.users.findFirst({
+  const existingEmail = await db.query.users.findFirst({
     where: eq(users.email, input.email),
   });
-
-  if (existing) {
+  if (existingEmail) {
     throw new AppError(409, "Email already in use");
+  }
+
+  const existingPhone = await db.query.users.findFirst({
+    where: eq(users.phone, input.phone),
+  });
+  if (existingPhone) {
+    throw new AppError(409, "Phone number already in use");
   }
 
   const hashedPassword = await hashPassword(input.password);
@@ -147,6 +157,8 @@ export async function createUser(
       name: input.name,
       role: input.role,
       tenantId,
+      numaraTaj: input.numaraTaj,
+      phone: input.phone,
       createdById: creatorId,
     })
     .returning({
@@ -155,6 +167,8 @@ export async function createUser(
       name: users.name,
       role: users.role,
       tenantId: users.tenantId,
+      numaraTaj: users.numaraTaj,
+      phone: users.phone,
       isActive: users.isActive,
       createdAt: users.createdAt,
     });
@@ -220,6 +234,20 @@ export async function updateUser(
     updateData.isActive = input.isActive;
   }
 
+  if (input.numaraTaj !== undefined) {
+    updateData.numaraTaj = input.numaraTaj;
+  }
+
+  if (input.phone !== undefined) {
+    const existingPhone = await db.query.users.findFirst({
+      where: eq(users.phone, input.phone),
+    });
+    if (existingPhone && existingPhone.id !== id) {
+      throw new AppError(409, "Phone number already in use");
+    }
+    updateData.phone = input.phone;
+  }
+
   const [updated] = await db
     .update(users)
     .set(updateData)
@@ -230,6 +258,8 @@ export async function updateUser(
       name: users.name,
       role: users.role,
       tenantId: users.tenantId,
+      numaraTaj: users.numaraTaj,
+      phone: users.phone,
       isActive: users.isActive,
       updatedAt: users.updatedAt,
     });
@@ -251,12 +281,12 @@ export async function deleteUser(
     throw new AppError(404, "User not found");
   }
 
-  if (target.id === requesterId) {
-    throw new AppError(400, "Cannot delete yourself");
+  if (requesterRole !== "super_admin") {
+    throw new AppError(403, "Only super admin can delete users");
   }
 
-  if (requesterRole === "admin" && target.tenantId !== requesterTenantId) {
-    throw new AppError(403, "Insufficient permissions");
+  if (target.id === requesterId) {
+    throw new AppError(400, "Cannot delete yourself");
   }
 
   if (target.role === "super_admin") {

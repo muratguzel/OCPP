@@ -119,6 +119,10 @@ export function updateTransactionMeter(
   tx.meterValues.push({ timestamp, values });
 }
 
+/**
+ * Marks a transaction as closed. Returns the record only on first close;
+ * if already closed, returns undefined so callers can avoid double-notifying the backend.
+ */
 export function closeTransaction(
   chargePointId: string,
   transactionId: number | string,
@@ -128,6 +132,7 @@ export function closeTransaction(
   const cp = chargePoints.get(chargePointId);
   const tx = cp?.transactions.get(transactionId);
   if (!tx) return undefined;
+  if (tx.endTime) return undefined; // already closed, idempotent
   tx.meterStop = meterStop;
   tx.endTime = endTime ?? new Date().toISOString();
   return tx;
@@ -138,6 +143,19 @@ export function getTransaction(
   transactionId: number | string
 ): TransactionRecord | undefined {
   return chargePoints.get(chargePointId)?.transactions.get(transactionId);
+}
+
+/** Aktif (henüz endTime olmayan) transaction'ı connector için bulur. StatusNotification Available fallback için. */
+export function getActiveTransactionForConnector(
+  chargePointId: string,
+  connectorId: number
+): TransactionRecord | undefined {
+  const cp = chargePoints.get(chargePointId);
+  if (!cp) return undefined;
+  for (const tx of cp.transactions.values()) {
+    if (tx.connectorId === connectorId && !tx.endTime) return tx;
+  }
+  return undefined;
 }
 
 /** Bir CP'ye ait tüm transaction'ları listeler (aktif ve bitmiş). */

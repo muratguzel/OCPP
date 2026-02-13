@@ -11,16 +11,25 @@ import {
 const router = Router();
 
 router.use(authenticate);
-router.use(requireRole("super_admin"));
 
-router.get("/", tenantsController.listTenants);
-router.get("/:id", tenantsController.getTenantById);
-router.post("/", validate(createTenantSchema), tenantsController.createTenant);
+router.get("/", requireRole("super_admin"), tenantsController.listTenants);
+router.get(
+  "/:id",
+  requireRole("super_admin", "admin"),
+  tenantsController.getTenantById
+);
+router.post(
+  "/",
+  requireRole("super_admin"),
+  validate(createTenantSchema),
+  tenantsController.createTenant
+);
 router.patch(
   "/:id",
+  requireRole("super_admin", "admin"),
   validate(updateTenantSchema),
   tenantsController.updateTenant
 );
-router.delete("/:id", tenantsController.deleteTenant);
+router.delete("/:id", requireRole("super_admin"), tenantsController.deleteTenant);
 
 export default router;
