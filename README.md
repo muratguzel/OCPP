@@ -15,6 +15,7 @@ EV şarj istasyonu yönetim sistemi — monorepo. Backend API, OCPP Gateway, Web
 - [Ortam Değişkenleri](#ortam-değişkenleri)
 - [Veritabanı Migrasyonları](#veritabanı-migrasyonları)
 - [Sadece Yerel Geliştirme (Docker olmadan)](#sadece-yerel-geliştirme-docker-olmadan)
+- [Sunucuya Deploy (Belirli IP ile)](#sunucuya-deploy-belirli-ip-ile)
 
 ---
 
@@ -250,6 +251,57 @@ npm run db:migrate
    `npm run dev` → http://localhost:5173 (Vite proxy ile `/api` → backend’e yönlenir).
 
 Not: Backend’i 4000’de çalıştırmak için `backend/.env` içinde `PORT=4000` kullanabilirsiniz; böylece web’in proxy hedefi ile uyumlu olur.
+
+---
+
+## Sunucuya Deploy (Belirli IP ile)
+
+Projeyi bir sunucuya (örn. **209.38.226.171**) atıp `docker compose up` ile çalıştırdığınızda, web arayüzü ve **mobil uygulama**’nın doğru adreslere istek atması için aşağıdakileri yapın.
+
+### 1. Web (tarayıcı) için
+
+Web build sırasında OCPP Gateway adresi gömülür. Sunucu IP’nizi build argümanı olarak verin:
+
+- **Repo kökünde** bir `.env` dosyası oluşturun (veya mevcut `.env`’i düzenleyin):
+
+```bash
+# Sunucu IP’nize göre (örnek: 209.38.226.171)
+VITE_OCPP_GATEWAY_URL=http://209.38.226.171:3000
+```
+
+- Ardından web’i yeniden build edip tüm yığıı ayağa kaldırın:
+
+```bash
+docker compose up --build -d
+```
+
+Tarayıcıdan `http://209.38.226.171:5173` (veya web’in yayınlandığı port) açıldığında API istekleri aynı sunucuya gidecek; `/api` nginx ile backend’e proxy edilir.
+
+### 2. Mobil uygulama için
+
+Mobil uygulama API ve OCPP Gateway adreslerini **build anında** `.env`’den alır. Fiziksel cihazdan veya emülatörden sunucuya bağlanacaksanız:
+
+- **`mobile/.env`** dosyasını sunucu IP’nize göre ayarlayın:
+
+```bash
+EXPO_PUBLIC_OCPP_GATEWAY_URL=http://209.38.226.171:3000
+EXPO_PUBLIC_BACKEND_API_URL=http://209.38.226.171:4000
+```
+
+- `.env` değiştirdikten sonra uygulamayı yeniden başlatın / yeniden build alın (Expo’da `npm start` sonrası değişiklik için bazen yeniden başlatma gerekir).
+
+Böylece mobil istemci 209.38.226.171’deki backend (4000) ve OCPP Gateway’e (3000) istek atar.
+
+### 3. Özet: Değişen yerler
+
+| Nerede | Ne yapılır |
+|--------|-------------|
+| **Repo kökü `.env`** | `VITE_OCPP_GATEWAY_URL=http://209.38.226.171:3000` → web build’te kullanılır |
+| **`mobile/.env`** | `EXPO_PUBLIC_OCPP_GATEWAY_URL` ve `EXPO_PUBLIC_BACKEND_API_URL` sunucu IP ile (3000 ve 4000 portları) |
+| **Backend CORS** | Varsayılan `cors()` tüm origin’lere izin verir; ek ayar gerekmez. |
+| **Docker Compose** | Portlar (`4000`, `3000`, `9220`, `5173`) sunucuda açık olmalı; firewall’da bu portlara izin verin. |
+
+Fiziksel şarj noktaları OCPP WebSocket ile bağlanacaksa **9220** portunun da sunucuya erişilebilir olması gerekir (örn. `ws://209.38.226.171:9220`).
 
 ---
 
