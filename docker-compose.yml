@@ -16,6 +16,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - app_network
 
   redis:
     image: redis:7-alpine
@@ -29,6 +31,8 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    networks:
+      - app_network
 
   # ── Application Services ────────────────────────────────────
   backend:
@@ -56,6 +60,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    networks:
+      - app_network
 
   ocpp-gateway:
     build:
@@ -73,6 +79,8 @@ services:
       - ./ocpp-gateway/src:/app/src
     depends_on:
       - backend
+    networks:
+      - app_network
 
   web:
     build:
@@ -80,19 +88,22 @@ services:
       dockerfile: Dockerfile
       args:
         VITE_API_URL: /api
-        VITE_OCPP_GATEWAY_URL: http://localhost:3000
+        # Sunucuya deployda: repo kökünde .env ile VITE_OCPP_GATEWAY_URL=http://209.38.226.171:3000
+        VITE_OCPP_GATEWAY_URL: ${VITE_OCPP_GATEWAY_URL:-http://localhost:3000}
     restart: unless-stopped
     ports:
       - "5173:80"
     depends_on:
       - backend
+    networks:
+      - app_network
 
   # OCPP simulation: çoklu sanal şarj noktası (multi_runner.ts)
   # process.env.WS_URL öncelikli; yoksa .env_* içindeki değer kullanılır
   simulation:
     image: node:20-alpine
     working_dir: /app
-    command: sh -c "npm ci && npx tsx multi_runner.ts"
+    command: sh -c "npm install && npx tsx multi_runner.ts"
     environment:
       WS_URL: ws://ocpp-gateway:9220
     volumes:
@@ -100,6 +111,12 @@ services:
       - simulation_node_modules:/app/node_modules
     depends_on:
       - ocpp-gateway
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
 
 volumes:
   pgdata:
