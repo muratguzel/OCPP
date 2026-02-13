@@ -55,6 +55,7 @@ services:
       SEED_NAME: Super Admin
     volumes:
       - ./backend/src:/app/src
+      - ./backend/drizzle:/app/drizzle
     depends_on:
       postgres:
         condition: service_healthy

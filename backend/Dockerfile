@@ -33,6 +33,7 @@ ENV NODE_ENV=development
 
 COPY tsconfig.json drizzle.config.ts ./
 COPY src ./src
+COPY drizzle ./drizzle
 
 EXPOSE 3000
 CMD ["npx", "tsx", "src/index.ts"]
