@@ -91,6 +91,8 @@ export function TenantsPage() {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Acme Şarj"
                     required
+                    minLength={2}
+                    maxLength={100}
                   />
                 </div>
               </div>
@@ -198,13 +200,18 @@ function TenantActions({
             className="mr-2 w-32 rounded border-2 border-[#0F172A] px-2 py-1 text-sm"
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
+            required
+            minLength={2}
+            maxLength={100}
           />
           <Button
             size="sm"
             variant="secondary"
-            onClick={() =>
-              updateMutation.mutate({ name: editName })
-            }
+            onClick={() => {
+              const trimmed = editName.trim()
+              if (trimmed.length < 2) return
+              updateMutation.mutate({ name: trimmed })
+            }}
             disabled={updateMutation.isPending}
           >
             Save

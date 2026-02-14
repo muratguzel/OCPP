@@ -318,6 +318,8 @@ function AddUserForm({
             onChange={(e) => setNumaraTaj(e.target.value)}
             placeholder="e.g. 123456"
             required
+            minLength={3}
+            maxLength={20}
           />
         </div>
         <div className="space-y-2">
@@ -329,6 +331,8 @@ function AddUserForm({
             onChange={(e) => setPhone(e.target.value)}
             placeholder="e.g. +905551234567"
             required
+            pattern="^\+?[0-9]{10,15}$"
+            title="10-15 digit phone number, optionally starting with +"
           />
         </div>
         <div className="space-y-2">
@@ -338,6 +342,8 @@ function AddUserForm({
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
+            minLength={2}
+            maxLength={100}
           />
         </div>
         <div className="space-y-2">
@@ -358,7 +364,9 @@ function AddUserForm({
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            minLength={8}
           />
+          <p className="text-xs text-[#64748B]">At least 8 characters</p>
         </div>
       </div>
       <DialogFooter>

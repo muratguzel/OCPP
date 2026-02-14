@@ -217,19 +217,22 @@ function AddChargePointModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const tid = user?.role === 'super_admin' ? tenantId : user?.tenantId
-    if (tid && chargePointId.trim()) {
-      const payload: Record<string, unknown> = {
-        tenantId: tid,
-        chargePointId: chargePointId.trim(),
-        name: name.trim() || undefined,
-        connectorType,
-        maxPower: maxPower ? parseInt(maxPower, 10) : undefined,
-      }
-      if (ocppIdentity.trim()) payload.ocppIdentity = ocppIdentity.trim()
-      if (latitude) payload.latitude = parseFloat(latitude)
-      if (longitude) payload.longitude = parseFloat(longitude)
-      createMutation.mutate(payload)
+    if (!tid || !chargePointId.trim()) return
+    const lat = latitude ? parseFloat(latitude) : undefined
+    const lng = longitude ? parseFloat(longitude) : undefined
+    if (lat !== undefined && (lat < -90 || lat > 90)) { toast.error('Latitude must be between -90 and 90'); return }
+    if (lng !== undefined && (lng < -180 || lng > 180)) { toast.error('Longitude must be between -180 and 180'); return }
+    const payload: Record<string, unknown> = {
+      tenantId: tid,
+      chargePointId: chargePointId.trim(),
+      name: name.trim() || undefined,
+      connectorType,
+      maxPower: maxPower ? parseInt(maxPower, 10) : undefined,
     }
+    if (ocppIdentity.trim()) payload.ocppIdentity = ocppIdentity.trim()
+    if (lat !== undefined) payload.latitude = lat
+    if (lng !== undefined) payload.longitude = lng
+    createMutation.mutate(payload)
   }
 
   return (
@@ -263,6 +266,10 @@ function AddChargePointModal({
               onChange={(e) => setChargePointId(e.target.value)}
               placeholder="CP001"
               required
+              minLength={2}
+              maxLength={50}
+              pattern="^[a-zA-Z0-9_\-\.]+$"
+              title="Letters, digits, hyphens, underscores, dots only"
             />
           </div>
           <div>
@@ -302,6 +309,7 @@ function AddChargePointModal({
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               type="number"
               min="1"
+              max="1000"
               value={maxPower}
               onChange={(e) => setMaxPower(e.target.value)}
               placeholder="22"
@@ -314,6 +322,8 @@ function AddChargePointModal({
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 type="number"
                 step="any"
+                min="-90"
+                max="90"
                 value={latitude}
                 onChange={(e) => setLatitude(e.target.value)}
                 placeholder="41.0082"
@@ -325,6 +335,8 @@ function AddChargePointModal({
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 type="number"
                 step="any"
+                min="-180"
+                max="180"
                 value={longitude}
                 onChange={(e) => setLongitude(e.target.value)}
                 placeholder="28.9784"
@@ -398,6 +410,10 @@ function EditChargePointModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const lat = latitude.toString().trim() ? parseFloat(latitude.toString()) : NaN
+    const lng = longitude.toString().trim() ? parseFloat(longitude.toString()) : NaN
+    if (!Number.isNaN(lat) && (lat < -90 || lat > 90)) { toast.error('Latitude must be between -90 and 90'); return }
+    if (!Number.isNaN(lng) && (lng < -180 || lng > 180)) { toast.error('Longitude must be between -180 and 180'); return }
     const payload: Record<string, unknown> = {
       name: name.trim() || undefined,
       isActive,
@@ -406,8 +422,6 @@ function EditChargePointModal({
     }
     if (ocppIdentity.trim()) payload.ocppIdentity = ocppIdentity.trim()
     else payload.ocppIdentity = null
-    const lat = latitude.trim() ? parseFloat(latitude) : NaN
-    const lng = longitude.trim() ? parseFloat(longitude) : NaN
     if (!Number.isNaN(lat)) payload.latitude = lat
     if (!Number.isNaN(lng)) payload.longitude = lng
     updateMutation.mutate(payload)
@@ -468,6 +482,7 @@ function EditChargePointModal({
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               type="number"
               min="1"
+              max="1000"
               value={maxPower}
               onChange={(e) => setMaxPower(e.target.value)}
               placeholder="22"
@@ -480,6 +495,8 @@ function EditChargePointModal({
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 type="number"
                 step="any"
+                min="-90"
+                max="90"
                 value={latitude}
                 onChange={(e) => setLatitude(e.target.value)}
                 placeholder="41.0082"
@@ -491,6 +508,8 @@ function EditChargePointModal({
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 type="number"
                 step="any"
+                min="-180"
+                max="180"
                 value={longitude}
                 onChange={(e) => setLongitude(e.target.value)}
                 placeholder="28.9784"

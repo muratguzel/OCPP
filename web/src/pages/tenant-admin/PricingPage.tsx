@@ -141,9 +141,11 @@ export function PricingPage() {
                   type="number"
                   step="0.01"
                   min="0"
+                  max="9999"
                   value={pricePerKwh}
                   onChange={(e) => setPricePerKwh(e.target.value)}
                   placeholder="12.50"
+                  required
                 />
               </div>
               <div className="space-y-2">
@@ -157,6 +159,7 @@ export function PricingPage() {
                   value={vatRate}
                   onChange={(e) => setVatRate(e.target.value)}
                   placeholder="18"
+                  required
                 />
                 <p className="text-xs text-[#64748B]">
                   Use 0% if not selling electricity; set your rate if selling.
