@@ -15,6 +15,26 @@ import { StatusBadge } from '@/components/StatusBadge'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
+interface GatewayCP {
+  chargePointId: string
+  connectors?: { status?: string }[]
+}
+
+const CHARGING_STATUSES = ['charging', 'suspendedev', 'suspendedevse']
+const FAULTED_STATUSES = ['faulted', 'unavailable']
+
+function getPrimaryStatus(gatewayCp: GatewayCP | undefined): string {
+  if (!gatewayCp) return 'Offline'
+  const connectors = gatewayCp.connectors ?? []
+  if (connectors.some((c) => CHARGING_STATUSES.includes(c.status?.toLowerCase() ?? ''))) {
+    return 'Charging'
+  }
+  if (connectors.some((c) => FAULTED_STATUSES.includes(c.status?.toLowerCase() ?? ''))) {
+    return 'Faulted'
+  }
+  return 'Available'
+}
+
 export interface ChargePointRow {
   id: string
   chargePointId: string
@@ -53,10 +73,6 @@ export function ChargePointsPage() {
     enabled: !!gatewayApi,
   })
 
-  interface GatewayCP {
-    chargePointId: string
-    connectors?: { status: string }[]
-  }
   const gatewayMap = new Map<string, GatewayCP>(
     (gatewayStatus?.chargePoints ?? []).map((cp: GatewayCP) => [
       cp.chargePointId.toLowerCase(),
@@ -87,18 +103,8 @@ export function ChargePointsPage() {
           {chargePoints.map((cp: ChargePointRow) => {
             const gatewayCp = gatewayMap.get(cp.chargePointId.toLowerCase()) ?? (cp.ocppIdentity ? gatewayMap.get(cp.ocppIdentity.toLowerCase()) : undefined)
             const isOnline = !!gatewayCp
-            const connectors: { status: string }[] = gatewayCp?.connectors ?? []
-            const primaryStatus = connectors.some((c) =>
-              ['Charging', 'SuspendedEV', 'SuspendedEVSE'].includes(c.status)
-            )
-              ? 'Charging'
-              : connectors.some((c) =>
-                  ['Faulted', 'Unavailable'].includes(c.status)
-                )
-                ? 'Faulted'
-                : isOnline
-                  ? 'Available'
-                  : 'Offline'
+            const connectors = gatewayCp?.connectors ?? []
+            const primaryStatus = getPrimaryStatus(gatewayCp)
             return (
               <Card
                 key={cp.id}
