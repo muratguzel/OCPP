@@ -64,8 +64,9 @@ export function PricingPage() {
     e.preventDefault()
     const price = parseFloat(pricePerKwh)
     const vat = parseFloat(vatRate)
-    if (Number.isNaN(price) || Number.isNaN(vat) || vat < 0 || vat > 100)
-      return
+    if (Number.isNaN(price) || price < 0) { toast.error('Please enter a valid price (min 0)'); return }
+    if (price > 9999) { toast.error('Price cannot exceed 9999'); return }
+    if (Number.isNaN(vat) || vat < 0 || vat > 100) { toast.error('VAT rate must be between 0 and 100'); return }
     updateMutation.mutate({ pricePerKwh: price, vatRate: vat })
   }
 

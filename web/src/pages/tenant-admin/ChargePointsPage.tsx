@@ -217,15 +217,20 @@ function AddChargePointModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const tid = user?.role === 'super_admin' ? tenantId : user?.tenantId
-    if (!tid || !chargePointId.trim()) return
+    if (!tid) { toast.error('Please select a tenant'); return }
+    const trimmedId = chargePointId.trim()
+    if (!trimmedId || trimmedId.length < 3) { toast.error('OCPP ID must be at least 3 characters'); return }
+    if (!/^[a-zA-Z0-9_.\-]+$/.test(trimmedId)) { toast.error('OCPP ID: only letters, digits, hyphens, underscores, dots'); return }
+    const trimmedName = name.trim()
+    if (!trimmedName || trimmedName.length < 2) { toast.error('Name must be at least 2 characters'); return }
     const lat = latitude ? parseFloat(latitude) : undefined
     const lng = longitude ? parseFloat(longitude) : undefined
     if (lat !== undefined && (lat < -90 || lat > 90)) { toast.error('Latitude must be between -90 and 90'); return }
     if (lng !== undefined && (lng < -180 || lng > 180)) { toast.error('Longitude must be between -180 and 180'); return }
     const payload: Record<string, unknown> = {
       tenantId: tid,
-      chargePointId: chargePointId.trim(),
-      name: name.trim() || undefined,
+      chargePointId: trimmedId,
+      name: trimmedName,
       connectorType,
       maxPower: maxPower ? parseInt(maxPower, 10) : undefined,
     }
@@ -266,10 +271,10 @@ function AddChargePointModal({
               onChange={(e) => setChargePointId(e.target.value)}
               placeholder="CP001"
               required
-              minLength={2}
+              minLength={3}
               maxLength={50}
-              pattern="^[a-zA-Z0-9_\-\.]+$"
-              title="Letters, digits, hyphens, underscores, dots only"
+              pattern="^[a-zA-Z0-9_.\-]+$"
+              title="Letters, digits, hyphens, underscores, dots only (min 3 chars)"
             />
           </div>
           <div>
@@ -283,12 +288,15 @@ function AddChargePointModal({
             <p className="mt-1 text-xs text-[#64748B]">Set when OCPP 2.x connects with a different WebSocket path (e.g. 2.0.1). Matches gateway list so start charge works.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium">Name (optional)</label>
+            <label className="block text-sm font-medium">Name</label>
             <input
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Station A"
+              required
+              minLength={2}
+              maxLength={100}
             />
           </div>
           <div>
@@ -410,12 +418,14 @@ function EditChargePointModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const trimmedName = name.trim()
+    if (!trimmedName || trimmedName.length < 2) { toast.error('Name must be at least 2 characters'); return }
     const lat = latitude.toString().trim() ? parseFloat(latitude.toString()) : NaN
     const lng = longitude.toString().trim() ? parseFloat(longitude.toString()) : NaN
     if (!Number.isNaN(lat) && (lat < -90 || lat > 90)) { toast.error('Latitude must be between -90 and 90'); return }
     if (!Number.isNaN(lng) && (lng < -180 || lng > 180)) { toast.error('Longitude must be between -180 and 180'); return }
     const payload: Record<string, unknown> = {
-      name: name.trim() || undefined,
+      name: trimmedName,
       isActive,
       connectorType,
       maxPower: maxPower ? parseInt(maxPower, 10) : undefined,
@@ -437,12 +447,15 @@ function EditChargePointModal({
         <p className="mt-1 text-sm text-[#64748B]">ID: {chargePoint.chargePointId}</p>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium">Name (optional)</label>
+            <label className="block text-sm font-medium">Name</label>
             <input
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Station A"
+              required
+              minLength={2}
+              maxLength={100}
             />
           </div>
           <div className="flex items-center gap-2">

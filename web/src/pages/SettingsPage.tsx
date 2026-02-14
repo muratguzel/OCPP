@@ -49,6 +49,18 @@ export function SettingsPage() {
       setMessage({ type: 'error', text: 'New password must be at least 8 characters.' })
       return
     }
+    if (!/[A-Z]/.test(newPassword)) {
+      setMessage({ type: 'error', text: 'New password must contain at least one uppercase letter.' })
+      return
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      setMessage({ type: 'error', text: 'New password must contain at least one lowercase letter.' })
+      return
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      setMessage({ type: 'error', text: 'New password must contain at least one digit.' })
+      return
+    }
     changePasswordMutation.mutate({ currentPassword, newPassword })
   }
 
@@ -118,7 +130,7 @@ export function SettingsPage() {
                 required
                 minLength={8}
               />
-              <p className="text-xs text-[#64748B]">At least 8 characters</p>
+              <p className="text-xs text-[#64748B]">At least 8 characters, 1 uppercase, 1 lowercase, 1 digit</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="confirmPassword">Confirm New Password</Label>

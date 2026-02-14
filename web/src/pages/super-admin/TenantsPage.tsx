@@ -59,7 +59,10 @@ export function TenantsPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (name.trim()) createMutation.mutate({ name: name.trim() })
+    const trimmed = name.trim()
+    if (!trimmed) { toast.error('Tenant name is required'); return }
+    if (trimmed.length < 2) { toast.error('Tenant name must be at least 2 characters'); return }
+    createMutation.mutate({ name: trimmed })
   }
 
   return (
@@ -197,11 +200,9 @@ function TenantActions({
       {editing ? (
         <>
           <input
-            className="mr-2 w-32 rounded border-2 border-[#0F172A] px-2 py-1 text-sm"
+            className="mr-2 w-48 rounded border-2 border-[#0F172A] px-2 py-1 text-sm"
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
-            required
-            minLength={2}
             maxLength={100}
           />
           <Button
@@ -209,7 +210,8 @@ function TenantActions({
             variant="secondary"
             onClick={() => {
               const trimmed = editName.trim()
-              if (trimmed.length < 2) return
+              if (!trimmed) { toast.error('Tenant name is required'); return }
+              if (trimmed.length < 2) { toast.error('Tenant name must be at least 2 characters'); return }
               updateMutation.mutate({ name: trimmed })
             }}
             disabled={updateMutation.isPending}

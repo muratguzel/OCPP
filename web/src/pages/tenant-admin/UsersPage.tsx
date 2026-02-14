@@ -114,7 +114,9 @@ export function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map(
+                {users.filter(
+                  (u: { isActive: boolean }) => u.isActive
+                ).map(
                   (u: {
                     id: string
                     name: string
@@ -177,7 +179,7 @@ function UserDeleteButton({
     onSuccess: () => {
       onDeleted()
       setOpen(false)
-      toast.success('User deleted')
+      toast.success('User deactivated')
     },
     onError: (err: unknown) => {
       toast.error((err as any)?.response?.data?.message ?? 'Failed to delete user')
@@ -207,9 +209,9 @@ function UserDeleteButton({
       </Button>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Kullanıcıyı sil</DialogTitle>
+          <DialogTitle>Kullanıcıyı devre dışı bırak</DialogTitle>
           <DialogDescription>
-            <strong>{user.name}</strong> ({user.email}) kullanıcısını devre dışı bırakmak üzeresiniz. Hesap pasif hale gelecektir. Emin misiniz?
+            <strong>{user.name}</strong> ({user.email}) kullanıcısını devre dışı bırakmak üzeresiniz. Hesap pasif hale gelecek ve listeden kaldırılacaktır. Emin misiniz?
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -221,7 +223,7 @@ function UserDeleteButton({
             onClick={() => deleteMutation.mutate(undefined)}
             disabled={deleteMutation.isPending}
           >
-            {deleteMutation.isPending ? 'Siliniyor...' : 'Sil'}
+            {deleteMutation.isPending ? 'İşleniyor...' : 'Devre Dışı Bırak'}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -260,12 +262,22 @@ function AddUserForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const trimmedName = name.trim()
+    const trimmedPhone = phone.trim()
+    const trimmedNumaraTaj = numaraTaj.trim()
+    if (!trimmedName || trimmedName.length < 2) { toast.error('Name must be at least 2 characters'); return }
+    if (/^\d+$/.test(trimmedName)) { toast.error('Name cannot be only digits'); return }
+    if (!email.trim()) { toast.error('Email is required'); return }
+    if (password.length < 8) { toast.error('Password must be at least 8 characters'); return }
+    if (!trimmedNumaraTaj || !/^[0-9]+$/.test(trimmedNumaraTaj)) { toast.error('Numarataj must contain only digits'); return }
+    if (trimmedNumaraTaj.length < 3) { toast.error('Numarataj must be at least 3 digits'); return }
+    if (!trimmedPhone || !/^\+?[0-9]{10,15}$/.test(trimmedPhone)) { toast.error('Phone must be 10-15 digits, optionally starting with +'); return }
     const payload: Record<string, unknown> = {
-      email,
+      email: email.trim(),
       password,
-      name,
-      numaraTaj: numaraTaj.trim(),
-      phone: phone.trim(),
+      name: trimmedName,
+      numaraTaj: trimmedNumaraTaj,
+      phone: trimmedPhone,
       role,
     }
     if (isSuperAdmin && tenantId) payload.tenantId = tenantId
@@ -315,11 +327,14 @@ function AddUserForm({
           <Input
             id="numaraTaj"
             value={numaraTaj}
-            onChange={(e) => setNumaraTaj(e.target.value)}
+            onChange={(e) => setNumaraTaj(e.target.value.replace(/[^0-9]/g, ''))}
             placeholder="e.g. 123456"
             required
             minLength={3}
             maxLength={20}
+            pattern="^[0-9]+$"
+            title="Only digits allowed"
+            inputMode="numeric"
           />
         </div>
         <div className="space-y-2">
@@ -344,6 +359,8 @@ function AddUserForm({
             required
             minLength={2}
             maxLength={100}
+            pattern="^(?!^\d+$).{2,}$"
+            title="Name cannot be only digits"
           />
         </div>
         <div className="space-y-2">
