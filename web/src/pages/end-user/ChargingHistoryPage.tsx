@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { format, formatDistanceStrict } from 'date-fns'
+import { QueryError } from '@/components/QueryError'
 
 interface Transaction {
   id: string
@@ -27,7 +28,7 @@ interface Transaction {
 }
 
 export function ChargingHistoryPage() {
-  const { data: transactions = [], isLoading } = useQuery({
+  const { data: transactions = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['transactions'],
     queryFn: () => api.get<Transaction[]>('/transactions').then((r) => r.data),
   })
@@ -59,6 +60,12 @@ export function ChargingHistoryPage() {
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-[#64748B]">
                     Loading...
+                  </TableCell>
+                </TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <QueryError message="Failed to load charging history." onRetry={refetch} />
                   </TableCell>
                 </TableRow>
               ) : transactions.length === 0 ? (

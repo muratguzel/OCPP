@@ -30,13 +30,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Plus, Pencil, Ban, CheckCircle, Trash2 } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
+import { QueryError } from '@/components/QueryError'
+import { toast } from 'sonner'
 
 export function TenantsPage() {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const queryClient = useQueryClient()
 
-  const { data: tenants = [], isLoading } = useQuery({
+  const { data: tenants = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['tenants'],
     queryFn: () => api.get('/tenants').then((r) => r.data),
   })
@@ -48,6 +50,10 @@ export function TenantsPage() {
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
       setOpen(false)
       setName('')
+      toast.success('Tenant created')
+    },
+    onError: (err: unknown) => {
+      toast.error((err as any)?.response?.data?.message ?? 'Failed to create tenant')
     },
   })
 
@@ -112,6 +118,10 @@ export function TenantsPage() {
         <CardContent>
           {isLoading ? (
             <p className="text-[#64748B]">Loading...</p>
+          ) : isError ? (
+            <QueryError message="Failed to load tenants." onRetry={refetch} />
+          ) : tenants.length === 0 ? (
+            <p className="py-8 text-center text-[#64748B]">No tenants yet.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -160,6 +170,10 @@ function TenantActions({
     onSuccess: () => {
       onUpdate()
       setEditing(false)
+      toast.success('Tenant updated')
+    },
+    onError: (err: unknown) => {
+      toast.error((err as any)?.response?.data?.message ?? 'Failed to update tenant')
     },
   })
 
@@ -169,6 +183,10 @@ function TenantActions({
     onSuccess: () => {
       onUpdate()
       setDeleteOpen(false)
+      toast.success('Tenant deleted')
+    },
+    onError: (err: unknown) => {
+      toast.error((err as any)?.response?.data?.message ?? 'Failed to delete tenant')
     },
   })
 
