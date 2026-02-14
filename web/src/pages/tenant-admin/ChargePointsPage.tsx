@@ -24,15 +24,15 @@ const CHARGING_STATUSES = ['charging', 'suspendedev', 'suspendedevse']
 const FAULTED_STATUSES = ['faulted', 'unavailable']
 
 function getPrimaryStatus(gatewayCp: GatewayCP | undefined): string {
-  if (!gatewayCp) return 'Offline'
+  if (!gatewayCp) return 'Çevrimdışı'
   const connectors = gatewayCp.connectors ?? []
   if (connectors.some((c) => CHARGING_STATUSES.includes(c.status?.toLowerCase() ?? ''))) {
-    return 'Charging'
+    return 'Şarj Oluyor'
   }
   if (connectors.some((c) => FAULTED_STATUSES.includes(c.status?.toLowerCase() ?? ''))) {
-    return 'Faulted'
+    return 'Arızalı'
   }
-  return 'Available'
+  return 'Uygun'
 }
 
 export interface ChargePointRow {
@@ -84,20 +84,20 @@ export function ChargePointsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F172A]">Charge Points</h1>
+          <h1 className="text-2xl font-bold text-[#0F172A]">Şarj Noktaları</h1>
           <p className="text-[#64748B]">
-            Manage and monitor charging stations
+            Şarj istasyonlarını yönetin ve izleyin
           </p>
         </div>
         {user?.role === 'super_admin' && (
           <Button onClick={() => setShowAddModal(true)}>
             <Plus className="h-4 w-4" />
-            Add Charge Point
+            Şarj Noktası Ekle
           </Button>
         )}
       </div>
       {isLoading ? (
-        <p className="text-[#64748B]">Loading...</p>
+        <p className="text-[#64748B]">Yükleniyor...</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {chargePoints.map((cp: ChargePointRow) => {
@@ -123,7 +123,7 @@ export function ChargePointsPage() {
                     <CardTitle className="text-base">{cp.chargePointId}</CardTitle>
                     <div className="flex items-center gap-2">
                       {user?.role !== 'user' && (
-                        <span className="rounded p-1 text-[#64748B] hover:bg-[#f1f5f9]" title="Edit">
+                        <span className="rounded p-1 text-[#64748B] hover:bg-[#f1f5f9]" title="Düzenle">
                           <Pencil className="h-4 w-4" />
                         </span>
                       )}
@@ -140,8 +140,8 @@ export function ChargePointsPage() {
                 <CardContent>
                   <p className="text-xs text-[#64748B]">
                     {isOnline
-                      ? `${connectors.length} connector(s) · Connected`
-                      : 'Disconnected'}
+                      ? `${connectors.length} konnektör · Bağlı`
+                      : 'Bağlantı Yok'}
                   </p>
                 </CardContent>
               </Card>
@@ -207,7 +207,7 @@ function AddChargePointModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charge-points'] })
       onSuccess()
-      toast.success('Charge point added')
+      toast.success('Şarj noktası eklendi')
     },
     onError: (err: unknown) => {
       toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Şarj noktası eklenemedi')
@@ -217,16 +217,16 @@ function AddChargePointModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const tid = user?.role === 'super_admin' ? tenantId : user?.tenantId
-    if (!tid) { toast.error('Please select a tenant'); return }
+    if (!tid) { toast.error('Lütfen bir firma seçin'); return }
     const trimmedId = chargePointId.trim()
-    if (!trimmedId || trimmedId.length < 3) { toast.error('OCPP ID must be at least 3 characters'); return }
-    if (!/^[a-zA-Z0-9_.\-]+$/.test(trimmedId)) { toast.error('OCPP ID: only letters, digits, hyphens, underscores, dots'); return }
+    if (!trimmedId || trimmedId.length < 3) { toast.error('OCPP ID en az 3 karakter olmalı'); return }
+    if (!/^[a-zA-Z0-9_.\-]+$/.test(trimmedId)) { toast.error('OCPP ID: sadece harf, rakam, tire, alt çizgi, nokta'); return }
     const trimmedName = name.trim()
-    if (!trimmedName || trimmedName.length < 2) { toast.error('Name must be at least 2 characters'); return }
+    if (!trimmedName || trimmedName.length < 2) { toast.error('İsim en az 2 karakter olmalı'); return }
     const lat = latitude ? parseFloat(latitude) : undefined
     const lng = longitude ? parseFloat(longitude) : undefined
-    if (lat !== undefined && (lat < -90 || lat > 90)) { toast.error('Latitude must be between -90 and 90'); return }
-    if (lng !== undefined && (lng < -180 || lng > 180)) { toast.error('Longitude must be between -180 and 180'); return }
+    if (lat !== undefined && (lat < -90 || lat > 90)) { toast.error('Enlem -90 ile 90 arasında olmalı'); return }
+    if (lng !== undefined && (lng < -180 || lng > 180)) { toast.error('Boylam -180 ile 180 arasında olmalı'); return }
     const payload: Record<string, unknown> = {
       tenantId: tid,
       chargePointId: trimmedId,
@@ -243,18 +243,18 @@ function AddChargePointModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="w-full max-w-md rounded-lg border-2 border-[#0F172A] bg-white p-6">
-        <h2 className="text-lg font-semibold">Add Charge Point</h2>
+        <h2 className="text-lg font-semibold">Şarj Noktası Ekle</h2>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {user?.role === 'super_admin' && (
             <div>
-              <label className="block text-sm font-medium">Tenant</label>
+              <label className="block text-sm font-medium">Firma</label>
               <select
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 value={tenantId}
                 onChange={(e) => setTenantId(e.target.value)}
                 required
               >
-                <option value="">Select tenant</option>
+                <option value="">Firma seçin</option>
                 {tenants.map((t: { id: string; name: string }) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -274,33 +274,33 @@ function AddChargePointModal({
               minLength={3}
               maxLength={50}
               pattern="^[a-zA-Z0-9_.\-]+$"
-              title="Letters, digits, hyphens, underscores, dots only (min 3 chars)"
+              title="Sadece harf, rakam, tire, alt çizgi, nokta (min 3 karakter)"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Gateway identity (optional)</label>
+            <label className="block text-sm font-medium">Gateway kimliği (opsiyonel)</label>
             <input
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               value={ocppIdentity}
               onChange={(e) => setOcppIdentity(e.target.value)}
-              placeholder="e.g. 2.0.1 or ocpp2.1 — from GET /charge-points when 2.x connects"
+              placeholder="örn. 2.0.1 veya ocpp2.1"
             />
-            <p className="mt-1 text-xs text-[#64748B]">Set when OCPP 2.x connects with a different WebSocket path (e.g. 2.0.1). Matches gateway list so start charge works.</p>
+            <p className="mt-1 text-xs text-[#64748B]">OCPP 2.x farklı WebSocket path ile bağlandığında ayarlayın (örn. 2.0.1). Gateway listesiyle eşleşerek şarj başlatma çalışır.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium">Name</label>
+            <label className="block text-sm font-medium">İsim</label>
             <input
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Station A"
+              placeholder="İstasyon A"
               required
               minLength={2}
               maxLength={100}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Connector Type</label>
+            <label className="block text-sm font-medium">Konnektör Tipi</label>
             <select
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               value={connectorType}
@@ -312,7 +312,7 @@ function AddChargePointModal({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium">Max Power (kW, optional)</label>
+            <label className="block text-sm font-medium">Maks. Güç (kW, opsiyonel)</label>
             <input
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               type="number"
@@ -325,7 +325,7 @@ function AddChargePointModal({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium">Latitude (optional)</label>
+              <label className="block text-sm font-medium">Enlem (opsiyonel)</label>
               <input
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 type="number"
@@ -338,7 +338,7 @@ function AddChargePointModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Longitude (optional)</label>
+              <label className="block text-sm font-medium">Boylam (opsiyonel)</label>
               <input
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 type="number"
@@ -353,10 +353,10 @@ function AddChargePointModal({
           </div>
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
+              İptal
             </Button>
             <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending ? 'Adding...' : 'Add'}
+              {createMutation.isPending ? 'Ekleniyor...' : 'Ekle'}
             </Button>
           </div>
         </form>
@@ -396,7 +396,7 @@ function EditChargePointModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charge-points'] })
       onSuccess()
-      toast.success('Charge point updated')
+      toast.success('Şarj noktası güncellendi')
     },
     onError: (err: unknown) => {
       toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Şarj noktası güncellenemedi')
@@ -409,7 +409,7 @@ function EditChargePointModal({
       queryClient.invalidateQueries({ queryKey: ['charge-points'] })
       setShowDeleteConfirm(false)
       onDeleted?.()
-      toast.success('Charge point deleted')
+      toast.success('Şarj noktası silindi')
     },
     onError: (err: unknown) => {
       toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Şarj noktası silinemedi')
@@ -419,11 +419,11 @@ function EditChargePointModal({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const trimmedName = name.trim()
-    if (!trimmedName || trimmedName.length < 2) { toast.error('Name must be at least 2 characters'); return }
+    if (!trimmedName || trimmedName.length < 2) { toast.error('İsim en az 2 karakter olmalı'); return }
     const lat = latitude.toString().trim() ? parseFloat(latitude.toString()) : NaN
     const lng = longitude.toString().trim() ? parseFloat(longitude.toString()) : NaN
-    if (!Number.isNaN(lat) && (lat < -90 || lat > 90)) { toast.error('Latitude must be between -90 and 90'); return }
-    if (!Number.isNaN(lng) && (lng < -180 || lng > 180)) { toast.error('Longitude must be between -180 and 180'); return }
+    if (!Number.isNaN(lat) && (lat < -90 || lat > 90)) { toast.error('Enlem -90 ile 90 arasında olmalı'); return }
+    if (!Number.isNaN(lng) && (lng < -180 || lng > 180)) { toast.error('Boylam -180 ile 180 arasında olmalı'); return }
     const payload: Record<string, unknown> = {
       name: trimmedName,
       isActive,
@@ -443,16 +443,16 @@ function EditChargePointModal({
         className="w-full max-w-md rounded-lg border-2 border-[#0F172A] bg-white p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold">Edit Charge Point</h2>
+        <h2 className="text-lg font-semibold">Şarj Noktasını Düzenle</h2>
         <p className="mt-1 text-sm text-[#64748B]">ID: {chargePoint.chargePointId}</p>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium">Name</label>
+            <label className="block text-sm font-medium">İsim</label>
             <input
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Station A"
+              placeholder="İstasyon A"
               required
               minLength={2}
               maxLength={100}
@@ -466,19 +466,19 @@ function EditChargePointModal({
               onChange={(e) => setIsActive(e.target.checked)}
               className="h-4 w-4 rounded border-[#0F172A]"
             />
-            <label htmlFor="edit-isActive" className="text-sm font-medium">Active</label>
+            <label htmlFor="edit-isActive" className="text-sm font-medium">Aktif</label>
           </div>
           <div>
-            <label className="block text-sm font-medium">Gateway identity (optional)</label>
+            <label className="block text-sm font-medium">Gateway kimliği (opsiyonel)</label>
             <input
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               value={ocppIdentity}
               onChange={(e) => setOcppIdentity(e.target.value)}
-              placeholder="e.g. 2.0.1"
+              placeholder="örn. 2.0.1"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium">Connector Type</label>
+            <label className="block text-sm font-medium">Konnektör Tipi</label>
             <select
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               value={connectorType}
@@ -490,7 +490,7 @@ function EditChargePointModal({
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium">Max Power (kW, optional)</label>
+            <label className="block text-sm font-medium">Maks. Güç (kW, opsiyonel)</label>
             <input
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               type="number"
@@ -503,7 +503,7 @@ function EditChargePointModal({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium">Latitude (optional)</label>
+              <label className="block text-sm font-medium">Enlem (opsiyonel)</label>
               <input
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 type="number"
@@ -516,7 +516,7 @@ function EditChargePointModal({
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Longitude (optional)</label>
+              <label className="block text-sm font-medium">Boylam (opsiyonel)</label>
               <input
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 type="number"
@@ -540,16 +540,16 @@ function EditChargePointModal({
                   className="w-full sm:w-auto"
                 >
                   <Trash2 className="h-4 w-4" />
-                  Delete Charge Point
+                  Şarj Noktasını Sil
                 </Button>
               </div>
             )}
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={onClose}>
-                Cancel
+                İptal
               </Button>
               <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? 'Saving...' : 'Save'}
+                {updateMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
               </Button>
             </div>
           </div>
@@ -561,20 +561,20 @@ function EditChargePointModal({
             className="mx-4 w-full max-w-sm rounded-lg border-2 border-red-200 bg-white p-6 shadow-xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-red-700">Delete Charge Point?</h3>
+            <h3 className="text-lg font-semibold text-red-700">Şarj Noktasını Sil?</h3>
             <p className="mt-2 text-sm text-[#64748B]">
-              Are you sure you want to delete <strong>{chargePoint.chargePointId}</strong>? This action cannot be undone.
+              <strong>{chargePoint.chargePointId}</strong> şarj noktasını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
-                Cancel
+                İptal
               </Button>
               <Button
                 variant="destructive"
                 onClick={() => deleteMutation.mutate()}
                 disabled={deleteMutation.isPending}
               >
-                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                {deleteMutation.isPending ? 'Siliniyor...' : 'Sil'}
               </Button>
             </div>
           </div>

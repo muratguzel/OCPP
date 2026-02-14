@@ -53,7 +53,7 @@ export function PricingPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tenant', effectiveTenantId] })
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
-      toast.success('Pricing saved')
+      toast.success('Fiyatlandırma kaydedildi')
     },
     onError: (err: unknown) => {
       toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Fiyat kaydedilemedi')
@@ -64,17 +64,17 @@ export function PricingPage() {
     e.preventDefault()
     const price = parseFloat(pricePerKwh)
     const vat = parseFloat(vatRate)
-    if (Number.isNaN(price) || price < 0) { toast.error('Please enter a valid price (min 0)'); return }
-    if (price > 9999) { toast.error('Price cannot exceed 9999'); return }
-    if (Number.isNaN(vat) || vat < 0 || vat > 100) { toast.error('VAT rate must be between 0 and 100'); return }
+    if (Number.isNaN(price) || price < 0) { toast.error('Geçerli bir fiyat girin (min 0)'); return }
+    if (price > 9999) { toast.error('Fiyat 9999\'u geçemez'); return }
+    if (Number.isNaN(vat) || vat < 0 || vat > 100) { toast.error('KDV oranı 0 ile 100 arasında olmalı'); return }
     updateMutation.mutate({ pricePerKwh: price, vatRate: vat })
   }
 
   if (user?.role === 'admin' && !user?.tenantId) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-[#0F172A]">Pricing</h1>
-        <p className="text-[#64748B]">You must belong to a tenant to manage pricing.</p>
+        <h1 className="text-2xl font-bold text-[#0F172A]">Fiyatlandırma</h1>
+        <p className="text-[#64748B]">Fiyatlandırmayı yönetmek için bir firmaya bağlı olmalısınız.</p>
       </div>
     )
   }
@@ -82,11 +82,11 @@ export function PricingPage() {
   if (!effectiveTenantId) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-[#0F172A]">Pricing</h1>
+        <h1 className="text-2xl font-bold text-[#0F172A]">Fiyatlandırma</h1>
         {user?.role === 'super_admin' ? (
-          <p className="text-[#64748B]">Select a tenant from the filter to manage pricing.</p>
+          <p className="text-[#64748B]">Fiyatlandırmayı yönetmek için filtreden bir firma seçin.</p>
         ) : (
-          <p className="text-[#64748B]">Select a tenant to manage pricing.</p>
+          <p className="text-[#64748B]">Fiyatlandırmayı yönetmek için bir firma seçin.</p>
         )}
       </div>
     )
@@ -95,30 +95,30 @@ export function PricingPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#0F172A]">Pricing</h1>
+        <h1 className="text-2xl font-bold text-[#0F172A]">Fiyatlandırma</h1>
         <p className="text-[#64748B]">
-          Set kWh price and VAT rate for your charge points.
+          Şarj noktalarınız için kWh fiyatı ve KDV oranını belirleyin.
         </p>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Tenant Pricing</CardTitle>
+          <CardTitle>Firma Fiyatlandırması</CardTitle>
           <CardDescription>
             {user?.role === 'super_admin'
-              ? 'Select tenant above and set price per kWh and VAT rate. VAT 0% if not selling electricity.'
-              : 'Set price per kWh and VAT rate for all charge points in your organization.'}
+              ? 'Yukarıdan firma seçin, kWh fiyatı ve KDV oranını ayarlayın. Elektrik satışı yapmıyorsanız KDV %0.'
+              : 'Organizasyonunuzdaki tüm şarj noktaları için kWh fiyatı ve KDV oranını belirleyin.'}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {user?.role === 'super_admin' && (
             <div className="mb-4">
-              <Label>Tenant</Label>
+              <Label>Firma</Label>
               <select
                 className="mt-1 w-full max-w-xs rounded border-2 border-[#0F172A] px-3 py-2"
                 value={effectiveTenantId ?? ''}
                 onChange={(e) => setSelectedTenantId(e.target.value || null)}
               >
-                <option value="">Select tenant</option>
+                <option value="">Firma seçin</option>
                 {tenants.map((t: { id: string; name: string }) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -128,13 +128,13 @@ export function PricingPage() {
             </div>
           )}
           {isLoading ? (
-            <p className="text-[#64748B]">Loading...</p>
+            <p className="text-[#64748B]">Yükleniyor...</p>
           ) : isError ? (
-            <QueryError message="Failed to load pricing data." onRetry={refetch} />
+            <QueryError message="Fiyatlandırma verisi yüklenemedi." onRetry={refetch} />
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="pricePerKwh">Price per kWh (₺)</Label>
+                <Label htmlFor="pricePerKwh">kWh Başına Fiyat (₺)</Label>
                 <Input
                   id="pricePerKwh"
                   type="number"
@@ -148,7 +148,7 @@ export function PricingPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="vatRate">VAT Rate (%)</Label>
+                <Label htmlFor="vatRate">KDV Oranı (%)</Label>
                 <Input
                   id="vatRate"
                   type="number"
@@ -161,11 +161,11 @@ export function PricingPage() {
                   required
                 />
                 <p className="text-xs text-[#64748B]">
-                  Use 0% if not selling electricity; set your rate if selling.
+                  Elektrik satışı yapmıyorsanız %0 kullanın; satış yapıyorsanız oranınızı girin.
                 </p>
               </div>
               <Button type="submit" disabled={updateMutation.isPending}>
-                {updateMutation.isPending ? 'Saving...' : 'Save'}
+                {updateMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
               </Button>
             </form>
           )}

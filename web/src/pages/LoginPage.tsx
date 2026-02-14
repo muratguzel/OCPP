@@ -44,7 +44,7 @@ export function LoginPage() {
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { error?: string } } })?.response?.data
-          ?.error ?? 'Invalid email or password'
+          ?.error ?? 'Geçersiz e-posta veya şifre'
       setError(msg)
     } finally {
       setLoading(false)
@@ -58,13 +58,13 @@ export function LoginPage() {
           <img src="/logo.png" alt="Sarj Modul" className="mx-auto h-16 w-16 mb-2" />
           <CardTitle className="text-2xl">Sarj Modul</CardTitle>
           <CardDescription>
-            EV Charging Station Management Platform
+            EV Şarj İstasyonu Yönetim Platformu
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">E-posta</Label>
               <Input
                 id="email"
                 type="email"
@@ -75,7 +75,7 @@ export function LoginPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">Şifre</Label>
               <Input
                 id="password"
                 type="password"
@@ -89,7 +89,7 @@ export function LoginPage() {
               <p className="text-sm text-[#EF4444]">{error}</p>
             )}
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Signing in...' : 'Sign in'}
+              {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
             </Button>
           </form>
         </CardContent>

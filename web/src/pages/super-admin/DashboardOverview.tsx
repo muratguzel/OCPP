@@ -92,15 +92,15 @@ export function DashboardOverview() {
 
   const cards = isSuperAdmin
     ? [
-        { title: 'Active Sessions', value: '0', change: '+0%', changePositive: true, icon: Zap, iconBg: CARD_ICON_BG[0] },
-        { title: 'Total Revenue', value: `₺${revenue.toFixed(2)}`, change: '+0%', changePositive: true, icon: DollarSign, iconBg: CARD_ICON_BG[1] },
-        { title: 'Energy Dispensed', value: `${energy.toFixed(1)} kWh`, change: '-0%', changePositive: false, icon: TrendingUp, iconBg: CARD_ICON_BG[2] },
-        { title: 'Active Points', value: `${cpCount}/50`, badge: 'Optimal', icon: Building2, iconBg: CARD_ICON_BG[3] },
+        { title: 'Aktif Oturumlar', value: '0', change: '+0%', changePositive: true, icon: Zap, iconBg: CARD_ICON_BG[0] },
+        { title: 'Toplam Gelir', value: `₺${revenue.toFixed(2)}`, change: '+0%', changePositive: true, icon: DollarSign, iconBg: CARD_ICON_BG[1] },
+        { title: 'Dağıtılan Enerji', value: `${energy.toFixed(1)} kWh`, change: '-0%', changePositive: false, icon: TrendingUp, iconBg: CARD_ICON_BG[2] },
+        { title: 'Aktif Noktalar', value: `${cpCount}/50`, badge: 'Optimal', icon: Building2, iconBg: CARD_ICON_BG[3] },
       ]
     : [
-        { title: 'Charge Points', value: String(cpCount), icon: Zap, iconBg: CARD_ICON_BG[0] },
-        { title: 'Total Revenue', value: `₺${revenue.toFixed(2)}`, icon: DollarSign, iconBg: CARD_ICON_BG[1] },
-        { title: 'Energy Dispensed', value: `${energy.toFixed(1)} kWh`, icon: TrendingUp, iconBg: CARD_ICON_BG[2] },
+        { title: 'Şarj Noktaları', value: String(cpCount), icon: Zap, iconBg: CARD_ICON_BG[0] },
+        { title: 'Toplam Gelir', value: `₺${revenue.toFixed(2)}`, icon: DollarSign, iconBg: CARD_ICON_BG[1] },
+        { title: 'Dağıtılan Enerji', value: `${energy.toFixed(1)} kWh`, icon: TrendingUp, iconBg: CARD_ICON_BG[2] },
       ]
 
   const recentTx = Array.isArray(transactions) ? transactions.slice(0, 5) : []
@@ -109,9 +109,9 @@ export function DashboardOverview() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F172A]">Dashboard Overview</h1>
+          <h1 className="text-2xl font-bold text-[#0F172A]">Kontrol Paneli</h1>
           <p className="text-[#64748B]">
-            Real-time performance metrics for your EV network.
+            EV ağınız için gerçek zamanlı performans metrikleri.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -121,17 +121,17 @@ export function DashboardOverview() {
               {format(dateRange.start, 'MMM d')} - {format(dateRange.end, 'MMM d, yyyy')}
             </span>
           </div>
-          <Button disabled title="Coming soon">
+          <Button disabled title="Yakında">
             <Download className="h-4 w-4" />
-            Report
+            Rapor
           </Button>
         </div>
       </div>
 
       {statsLoading ? (
-        <div className="py-8 text-center text-[#64748B]">Loading dashboard...</div>
+        <div className="py-8 text-center text-[#64748B]">Kontrol paneli yükleniyor...</div>
       ) : statsError ? (
-        <QueryError message="Failed to load dashboard stats." onRetry={refetchStats} />
+        <QueryError message="Panel istatistikleri yüklenemedi." onRetry={refetchStats} />
       ) : null}
 
       {!statsLoading && !statsError && (
@@ -175,49 +175,49 @@ export function DashboardOverview() {
       <Card className="border border-[#0F172A]">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
-            <CardTitle className="text-lg">Recent Transactions</CardTitle>
-            <p className="text-sm text-[#64748B]">Latest charging sessions</p>
+            <CardTitle className="text-lg">Son İşlemler</CardTitle>
+            <p className="text-sm text-[#64748B]">En son şarj oturumları</p>
           </div>
           <Link to="/transactions" className="text-sm font-medium text-[#2563EB] hover:underline">
-            View All
+            Tümünü Gör
           </Link>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow className="border-b-2 border-[#0F172A]">
-                <TableHead className="font-semibold">SESSION ID</TableHead>
-                <TableHead className="font-semibold">CHARGE POINT</TableHead>
-                <TableHead className="font-semibold">DURATION</TableHead>
-                <TableHead className="font-semibold">ENERGY (KWH)</TableHead>
-                <TableHead className="font-semibold">TOTAL COST</TableHead>
-                <TableHead className="font-semibold">STATUS</TableHead>
+                <TableHead className="font-semibold">OTURUM ID</TableHead>
+                <TableHead className="font-semibold">ŞARJ NOKTASI</TableHead>
+                <TableHead className="font-semibold">SÜRE</TableHead>
+                <TableHead className="font-semibold">ENERJİ (KWH)</TableHead>
+                <TableHead className="font-semibold">TOPLAM TUTAR</TableHead>
+                <TableHead className="font-semibold">DURUM</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {txLoading ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-8 text-center text-[#64748B]">
-                    Loading...
+                    Yükleniyor...
                   </TableCell>
                 </TableRow>
               ) : txError ? (
                 <TableRow>
                   <TableCell colSpan={6}>
-                    <QueryError message="Failed to load transactions." onRetry={refetchTx} />
+                    <QueryError message="İşlemler yüklenemedi." onRetry={refetchTx} />
                   </TableCell>
                 </TableRow>
               ) : recentTx.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="py-8 text-center text-[#64748B]">
-                    No transactions yet.
+                    Henüz işlem yok.
                   </TableCell>
                 </TableRow>
               ) : (
                 recentTx.map((tx: { id: string; chargePointId: string; startTime: string; endTime?: string | null; kwh?: string | null; cost?: string | null }) => {
                   const start = new Date(tx.startTime)
                   const end = tx.endTime ? new Date(tx.endTime) : null
-                  const duration = end ? Math.round((end.getTime() - start.getTime()) / 60000) + ' min' : '-'
+                  const duration = end ? Math.round((end.getTime() - start.getTime()) / 60000) + ' dk' : '-'
                   return (
                     <TableRow key={tx.id}>
                       <TableCell className="font-mono text-sm">{tx.id.slice(0, 8)}...</TableCell>

@@ -98,11 +98,11 @@ export function MapWidget() {
   return (
     <div className="rounded-lg border border-[#0F172A] overflow-hidden bg-white">
       <div className="p-4 border-b border-[#0F172A]">
-        <h3 className="font-semibold">Charge Point Locations</h3>
+        <h3 className="font-semibold">Şarj Noktası Konumları</h3>
         <p className="text-sm text-[#64748B]">
           {pointsWithCoords.length > 0
-            ? `${pointsWithCoords.length} station(s) with coordinates`
-            : 'Add latitude/longitude to charge points to see them on the map'}
+            ? `Koordinatlı ${pointsWithCoords.length} istasyon`
+            : 'Haritada görmek için şarj noktalarına enlem/boylam ekleyin'}
         </p>
       </div>
       <div

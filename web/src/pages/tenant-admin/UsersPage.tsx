@@ -61,15 +61,15 @@ export function UsersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F172A]">Users</h1>
-          <p className="text-[#64748B]">Manage end-users for your tenant</p>
+          <h1 className="text-2xl font-bold text-[#0F172A]">Kullanıcılar</h1>
+          <p className="text-[#64748B]">Firmaya ait kullanıcıları yönetin</p>
         </div>
         {(user?.role === 'super_admin' || user?.role === 'admin') && (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="h-4 w-4" />
-                Add User
+                Kullanıcı Ekle
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -87,29 +87,29 @@ export function UsersPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Users List</CardTitle>
-          <CardDescription>All users in your organization</CardDescription>
+          <CardTitle>Kullanıcı Listesi</CardTitle>
+          <CardDescription>Organizasyonunuzdaki tüm kullanıcılar</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-[#64748B]">Loading...</p>
+            <p className="text-[#64748B]">Yükleniyor...</p>
           ) : isError ? (
-            <QueryError message="Failed to load users." onRetry={refetch} />
+            <QueryError message="Kullanıcılar yüklenemedi." onRetry={refetch} />
           ) : users.length === 0 ? (
-            <p className="py-8 text-center text-[#64748B]">No users yet.</p>
+            <p className="py-8 text-center text-[#64748B]">Henüz kullanıcı yok.</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
+                  <TableHead>Ad Soyad</TableHead>
+                  <TableHead>E-posta</TableHead>
                   <TableHead>Numarataj</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
+                  <TableHead>Telefon</TableHead>
+                  <TableHead>Rol</TableHead>
+                  <TableHead>Durum</TableHead>
+                  <TableHead>Oluşturulma</TableHead>
                   {(user?.role === 'super_admin' || user?.role === 'admin') && (
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-right">İşlemler</TableHead>
                   )}
                 </TableRow>
               </TableHeader>
@@ -405,7 +405,7 @@ function AddUserForm({
       api.post('/users', payload).then((r) => r.data),
     onSuccess: () => {
       onSuccess()
-      toast.success('User created')
+      toast.success('Kullanıcı oluşturuldu')
     },
     onError: (err: unknown) => {
       toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Kullanıcı oluşturulamadı')
@@ -417,13 +417,13 @@ function AddUserForm({
     const trimmedName = name.trim()
     const trimmedPhone = phone.trim()
     const trimmedNumaraTaj = numaraTaj.trim()
-    if (!trimmedName || trimmedName.length < 2) { toast.error('Name must be at least 2 characters'); return }
-    if (/^\d+$/.test(trimmedName)) { toast.error('Name cannot be only digits'); return }
-    if (!email.trim()) { toast.error('Email is required'); return }
-    if (password.length < 8) { toast.error('Password must be at least 8 characters'); return }
-    if (!trimmedNumaraTaj || !/^[0-9]+$/.test(trimmedNumaraTaj)) { toast.error('Numarataj must contain only digits'); return }
-    if (trimmedNumaraTaj.length < 3) { toast.error('Numarataj must be at least 3 digits'); return }
-    if (!trimmedPhone || !/^\+?[0-9]{10,15}$/.test(trimmedPhone)) { toast.error('Phone must be 10-15 digits, optionally starting with +'); return }
+    if (!trimmedName || trimmedName.length < 2) { toast.error('İsim en az 2 karakter olmalı'); return }
+    if (/^\d+$/.test(trimmedName)) { toast.error('İsim sadece rakamlardan oluşamaz'); return }
+    if (!email.trim()) { toast.error('E-posta zorunludur'); return }
+    if (password.length < 8) { toast.error('Şifre en az 8 karakter olmalı'); return }
+    if (!trimmedNumaraTaj || !/^[0-9]+$/.test(trimmedNumaraTaj)) { toast.error('Numarataj sadece rakam içermeli'); return }
+    if (trimmedNumaraTaj.length < 3) { toast.error('Numarataj en az 3 haneli olmalı'); return }
+    if (!trimmedPhone || !/^\+?[0-9]{10,15}$/.test(trimmedPhone)) { toast.error('Telefon 10-15 haneli olmalı, isteğe bağlı + ile başlayabilir'); return }
     const payload: Record<string, unknown> = {
       email: email.trim(),
       password,
@@ -439,21 +439,21 @@ function AddUserForm({
   return (
     <form onSubmit={handleSubmit}>
       <DialogHeader>
-        <DialogTitle>Add User</DialogTitle>
-        <DialogDescription>Create a new user account.</DialogDescription>
+        <DialogTitle>Kullanıcı Ekle</DialogTitle>
+        <DialogDescription>Yeni bir kullanıcı hesabı oluşturun.</DialogDescription>
       </DialogHeader>
       <div className="grid gap-4 py-4">
         {isSuperAdmin && (
           <>
             <div className="space-y-2">
-              <Label>Tenant</Label>
+              <Label>Firma</Label>
               <select
                 className="w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 value={tenantId}
                 onChange={(e) => setTenantId(e.target.value)}
                 required
               >
-                <option value="">Select tenant</option>
+                <option value="">Firma seçin</option>
                 {tenants.map((t) => (
                   <option key={t.id} value={t.id}>
                     {t.name}
@@ -462,14 +462,14 @@ function AddUserForm({
               </select>
             </div>
             <div className="space-y-2">
-              <Label>Role</Label>
+              <Label>Rol</Label>
               <select
                 className="w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 value={role}
                 onChange={(e) => setRole(e.target.value as 'user' | 'admin')}
               >
-                <option value="user">User</option>
-                <option value="admin">Admin</option>
+                <option value="user">Kullanıcı</option>
+                <option value="admin">Yönetici</option>
               </select>
             </div>
           </>
@@ -480,30 +480,30 @@ function AddUserForm({
             id="numaraTaj"
             value={numaraTaj}
             onChange={(e) => setNumaraTaj(e.target.value.replace(/[^0-9]/g, ''))}
-            placeholder="e.g. 123456"
+            placeholder="örn. 123456"
             required
             minLength={3}
             maxLength={20}
             pattern="^[0-9]+$"
-            title="Only digits allowed"
+            title="Sadece rakam girilmeli"
             inputMode="numeric"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="phone">Phone</Label>
+          <Label htmlFor="phone">Telefon</Label>
           <Input
             id="phone"
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            placeholder="e.g. +905551234567"
+            placeholder="örn. +905551234567"
             required
             pattern="^\+?[0-9]{10,15}$"
-            title="10-15 digit phone number, optionally starting with +"
+            title="10-15 haneli telefon numarası, isteğe bağlı + ile başlayabilir"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="name">Name</Label>
+          <Label htmlFor="name">Ad Soyad</Label>
           <Input
             id="name"
             value={name}
@@ -512,11 +512,11 @@ function AddUserForm({
             minLength={2}
             maxLength={100}
             pattern="^(?!^\d+$).{2,}$"
-            title="Name cannot be only digits"
+            title="İsim sadece rakamlardan oluşamaz"
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
+          <Label htmlFor="email">E-posta</Label>
           <Input
             id="email"
             type="email"
@@ -526,7 +526,7 @@ function AddUserForm({
           />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">Şifre</Label>
           <Input
             id="password"
             type="password"
@@ -535,12 +535,12 @@ function AddUserForm({
             required
             minLength={8}
           />
-          <p className="text-xs text-[#64748B]">At least 8 characters</p>
+          <p className="text-xs text-[#64748B]">En az 8 karakter</p>
         </div>
       </div>
       <DialogFooter>
         <Button type="submit" disabled={createMutation.isPending}>
-          {createMutation.isPending ? 'Creating...' : 'Create'}
+          {createMutation.isPending ? 'Oluşturuluyor...' : 'Oluştur'}
         </Button>
       </DialogFooter>
     </form>

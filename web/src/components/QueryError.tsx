@@ -2,7 +2,7 @@ import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function QueryError({
-  message = 'Failed to load data.',
+  message = 'Veri yüklenemedi.',
   onRetry,
 }: {
   message?: string
@@ -15,7 +15,7 @@ export function QueryError({
       {onRetry && (
         <Button variant="secondary" size="sm" onClick={onRetry}>
           <RefreshCw className="h-4 w-4" />
-          Retry
+          Tekrar Dene
         </Button>
       )}
     </div>

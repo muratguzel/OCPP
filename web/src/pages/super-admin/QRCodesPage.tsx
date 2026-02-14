@@ -48,16 +48,16 @@ export function QRCodesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#0F172A]">QR Codes</h1>
+        <h1 className="text-2xl font-bold text-[#0F172A]">QR Kodları</h1>
         <p className="text-[#64748B]">
-          Generate QR codes for charge points. Only super admin can create QR codes.
+          Şarj noktaları için QR kodları oluşturun. Yalnızca sistem yöneticisi QR kodu oluşturabilir.
         </p>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Select Tenant</CardTitle>
+          <CardTitle>Firma Seçin</CardTitle>
           <CardDescription>
-            Choose a tenant to see its charge points and generate QR codes.
+            Şarj noktalarını görmek ve QR kodu oluşturmak için bir firma seçin.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -66,7 +66,7 @@ export function QRCodesPage() {
             value={tenantId}
             onChange={handleTenantChange}
           >
-            <option value="">Select tenant</option>
+            <option value="">Firma seçin</option>
             {tenants.map((t: { id: string; name: string }) => (
               <option key={t.id} value={t.id}>
                 {t.name}
@@ -78,11 +78,11 @@ export function QRCodesPage() {
       {tenantId && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {isLoading ? (
-            <p className="text-[#64748B]">Loading charge points...</p>
+            <p className="text-[#64748B]">Şarj noktaları yükleniyor...</p>
           ) : isError ? (
-            <QueryError message="Failed to load charge points." onRetry={refetch} />
+            <QueryError message="Şarj noktaları yüklenemedi." onRetry={refetch} />
           ) : chargePoints.length === 0 ? (
-            <p className="text-[#64748B]">No charge points for this tenant.</p>
+            <p className="text-[#64748B]">Bu firma için şarj noktası bulunamadı.</p>
           ) : (
             chargePoints.map((cp: ChargePoint) => {
               const qrPayload = JSON.stringify({
@@ -103,7 +103,7 @@ export function QRCodesPage() {
                         <QRCodeSVG value={qrPayload} size={180} level="M" />
                       </div>
                       <p className="text-center text-xs text-[#64748B]">
-                        Scan with mobile app to start charging
+                        Şarj başlatmak için mobil uygulama ile tarayın
                       </p>
                     </div>
                   </CardContent>
