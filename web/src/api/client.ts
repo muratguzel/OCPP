@@ -2,6 +2,16 @@ import axios from 'axios'
 
 const API_BASE = import.meta.env.VITE_API_URL || '/api'
 
+const GATEWAY_URL = import.meta.env.VITE_OCPP_GATEWAY_URL as string | undefined
+
+if (!GATEWAY_URL) {
+  console.error('[OCPP] VITE_OCPP_GATEWAY_URL is not configured. Gateway features will be unavailable.')
+}
+
+export const gatewayApi = GATEWAY_URL
+  ? axios.create({ baseURL: GATEWAY_URL })
+  : null
+
 export const api = axios.create({
   baseURL: API_BASE,
   headers: { 'Content-Type': 'application/json' },

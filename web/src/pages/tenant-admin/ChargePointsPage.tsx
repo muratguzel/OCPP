@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/api/client'
+import { api, gatewayApi } from '@/api/client'
 import { useAuthStore } from '@/store/auth'
 import { useTenantFilterStore } from '@/store/tenantFilter'
 import { Button } from '@/components/ui/button'
@@ -14,8 +14,6 @@ import {
 import { StatusBadge } from '@/components/StatusBadge'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-
-const GATEWAY_URL = import.meta.env.VITE_OCPP_GATEWAY_URL || 'http://localhost:3000'
 
 export interface ChargePointRow {
   id: string
@@ -50,9 +48,9 @@ export function ChargePointsPage() {
 
   const { data: gatewayStatus } = useQuery({
     queryKey: ['ocpp-gateway-status'],
-    queryFn: () =>
-      fetch(`${GATEWAY_URL}/charge-points`).then((r) => r.json()),
+    queryFn: () => gatewayApi!.get('/charge-points').then((r) => r.data),
     refetchInterval: 10000,
+    enabled: !!gatewayApi,
   })
 
   interface GatewayCP {
