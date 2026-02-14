@@ -56,7 +56,7 @@ export function PricingPage() {
       toast.success('Pricing saved')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to save pricing')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Fiyat kaydedilemedi')
     },
   })
 

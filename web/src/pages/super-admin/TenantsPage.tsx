@@ -53,7 +53,7 @@ export function TenantsPage() {
       toast.success('Tenant created')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to create tenant')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Tenant oluşturulamadı')
     },
   })
 
@@ -178,7 +178,7 @@ function TenantActions({
       toast.success('Tenant updated')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to update tenant')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Tenant güncellenemedi')
     },
   })
 
@@ -191,7 +191,7 @@ function TenantActions({
       toast.success('Tenant deleted')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to delete tenant')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Tenant silinemedi')
     },
   })
 

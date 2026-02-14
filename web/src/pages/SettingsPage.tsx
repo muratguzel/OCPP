@@ -29,10 +29,10 @@ export function SettingsPage() {
       setNewPassword('')
       setConfirmPassword('')
     },
-    onError: (err: { response?: { data?: { message?: string } } }) => {
+    onError: (err: { response?: { data?: { message?: string; error?: string } } }) => {
       setMessage({
         type: 'error',
-        text: err.response?.data?.message ?? 'Failed to change password.',
+        text: err.response?.data?.error ?? err.response?.data?.message ?? 'Şifre değiştirilemedi.',
       })
     },
   })

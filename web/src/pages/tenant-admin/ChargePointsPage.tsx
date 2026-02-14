@@ -210,7 +210,7 @@ function AddChargePointModal({
       toast.success('Charge point added')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to add charge point')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Şarj noktası eklenemedi')
     },
   })
 
@@ -399,7 +399,7 @@ function EditChargePointModal({
       toast.success('Charge point updated')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to update charge point')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Şarj noktası güncellenemedi')
     },
   })
 
@@ -412,7 +412,7 @@ function EditChargePointModal({
       toast.success('Charge point deleted')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to delete charge point')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Şarj noktası silinemedi')
     },
   })
 

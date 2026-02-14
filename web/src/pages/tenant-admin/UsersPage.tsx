@@ -196,7 +196,7 @@ function UserDeactivateButton({
       toast.success('Kullanıcı devre dışı bırakıldı')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'İşlem başarısız')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'İşlem başarısız')
     },
   })
 
@@ -277,7 +277,7 @@ function UserEditButton({
       toast.success('Kullanıcı güncellendi')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Güncelleme başarısız')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Güncelleme başarısız')
     },
   })
 
@@ -408,7 +408,7 @@ function AddUserForm({
       toast.success('User created')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to create user')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Kullanıcı oluşturulamadı')
     },
   })
 
