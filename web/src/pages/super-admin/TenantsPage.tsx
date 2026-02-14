@@ -30,13 +30,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Plus, Pencil, Ban, CheckCircle, Trash2 } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
+import { QueryError } from '@/components/QueryError'
+import { toast } from 'sonner'
 
 export function TenantsPage() {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const queryClient = useQueryClient()
 
-  const { data: tenants = [], isLoading } = useQuery({
+  const { data: tenants = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['tenants'],
     queryFn: () => api.get('/tenants').then((r) => r.data),
   })
@@ -48,12 +50,19 @@ export function TenantsPage() {
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
       setOpen(false)
       setName('')
+      toast.success('Tenant created')
+    },
+    onError: (err: unknown) => {
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Tenant oluşturulamadı')
     },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (name.trim()) createMutation.mutate({ name: name.trim() })
+    const trimmed = name.trim()
+    if (!trimmed) { toast.error('Tenant name is required'); return }
+    if (trimmed.length < 2) { toast.error('Tenant name must be at least 2 characters'); return }
+    createMutation.mutate({ name: trimmed })
   }
 
   return (
@@ -85,6 +94,8 @@ export function TenantsPage() {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Acme Şarj"
                     required
+                    minLength={2}
+                    maxLength={100}
                   />
                 </div>
               </div>
@@ -112,6 +123,10 @@ export function TenantsPage() {
         <CardContent>
           {isLoading ? (
             <p className="text-[#64748B]">Loading...</p>
+          ) : isError ? (
+            <QueryError message="Failed to load tenants." onRetry={refetch} />
+          ) : tenants.length === 0 ? (
+            <p className="py-8 text-center text-[#64748B]">No tenants yet.</p>
           ) : (
             <Table>
               <TableHeader>
@@ -160,6 +175,10 @@ function TenantActions({
     onSuccess: () => {
       onUpdate()
       setEditing(false)
+      toast.success('Tenant updated')
+    },
+    onError: (err: unknown) => {
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Tenant güncellenemedi')
     },
   })
 
@@ -169,6 +188,10 @@ function TenantActions({
     onSuccess: () => {
       onUpdate()
       setDeleteOpen(false)
+      toast.success('Tenant deleted')
+    },
+    onError: (err: unknown) => {
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Tenant silinemedi')
     },
   })
 
@@ -177,16 +200,20 @@ function TenantActions({
       {editing ? (
         <>
           <input
-            className="mr-2 w-32 rounded border-2 border-[#0F172A] px-2 py-1 text-sm"
+            className="mr-2 w-48 rounded border-2 border-[#0F172A] px-2 py-1 text-sm"
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
+            maxLength={100}
           />
           <Button
             size="sm"
             variant="secondary"
-            onClick={() =>
-              updateMutation.mutate({ name: editName })
-            }
+            onClick={() => {
+              const trimmed = editName.trim()
+              if (!trimmed) { toast.error('Tenant name is required'); return }
+              if (trimmed.length < 2) { toast.error('Tenant name must be at least 2 characters'); return }
+              updateMutation.mutate({ name: trimmed })
+            }}
             disabled={updateMutation.isPending}
           >
             Save

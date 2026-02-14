@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { Leaf } from 'lucide-react'
+import { toast } from 'sonner'
 
 const CO2_PER_KM_GAS = 0.12
 const KM_PER_KWH = 5
@@ -23,15 +24,21 @@ export function SavingsCalculatorPage() {
     e.preventDefault()
     const kwhNum = parseFloat(kwh)
     const kmNum = parseFloat(km)
-    if (kwhNum > 0) {
+    if (!kwh.trim() && !km.trim()) {
+      toast.error('Please enter kWh or km value')
+      return
+    }
+    if (kwh.trim()) {
+      if (Number.isNaN(kwhNum) || kwhNum <= 0) { toast.error('kWh must be a positive number'); return }
+      if (kwhNum > 100000) { toast.error('kWh value is too large (max 100,000)'); return }
       const equivKm = kwhNum * KM_PER_KWH
       const co2Saved = equivKm * CO2_PER_KM_GAS
       setResult({ co2Saved, equivKm })
-    } else if (kmNum > 0) {
+    } else {
+      if (Number.isNaN(kmNum) || kmNum <= 0) { toast.error('Km must be a positive number'); return }
+      if (kmNum > 500000) { toast.error('Km value is too large (max 500,000)'); return }
       const co2Saved = kmNum * CO2_PER_KM_GAS
       setResult({ co2Saved, equivKm: kmNum })
-    } else {
-      setResult(null)
     }
   }
 
@@ -61,6 +68,7 @@ export function SavingsCalculatorPage() {
                 id="kwh"
                 type="number"
                 min="0"
+                max="100000"
                 step="0.1"
                 placeholder="e.g. 50"
                 value={kwh}
@@ -76,6 +84,7 @@ export function SavingsCalculatorPage() {
                 id="km"
                 type="number"
                 min="0"
+                max="500000"
                 step="1"
                 placeholder="e.g. 250"
                 value={km}

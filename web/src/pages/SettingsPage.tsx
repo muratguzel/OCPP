@@ -17,6 +17,7 @@ export function SettingsPage() {
   const { user } = useAuthStore()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const changePasswordMutation = useMutation({
@@ -26,11 +27,12 @@ export function SettingsPage() {
       setMessage({ type: 'success', text: 'Password changed successfully.' })
       setCurrentPassword('')
       setNewPassword('')
+      setConfirmPassword('')
     },
-    onError: (err: { response?: { data?: { message?: string } } }) => {
+    onError: (err: { response?: { data?: { message?: string; error?: string } } }) => {
       setMessage({
         type: 'error',
-        text: err.response?.data?.message ?? 'Failed to change password.',
+        text: err.response?.data?.error ?? err.response?.data?.message ?? 'Şifre değiştirilemedi.',
       })
     },
   })
@@ -39,6 +41,26 @@ export function SettingsPage() {
     e.preventDefault()
     setMessage(null)
     if (!currentPassword || !newPassword) return
+    if (newPassword !== confirmPassword) {
+      setMessage({ type: 'error', text: 'New passwords do not match.' })
+      return
+    }
+    if (newPassword.length < 8) {
+      setMessage({ type: 'error', text: 'New password must be at least 8 characters.' })
+      return
+    }
+    if (!/[A-Z]/.test(newPassword)) {
+      setMessage({ type: 'error', text: 'New password must contain at least one uppercase letter.' })
+      return
+    }
+    if (!/[a-z]/.test(newPassword)) {
+      setMessage({ type: 'error', text: 'New password must contain at least one lowercase letter.' })
+      return
+    }
+    if (!/[0-9]/.test(newPassword)) {
+      setMessage({ type: 'error', text: 'New password must contain at least one digit.' })
+      return
+    }
     changePasswordMutation.mutate({ currentPassword, newPassword })
   }
 
@@ -96,7 +118,6 @@ export function SettingsPage() {
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 required
-                minLength={1}
               />
             </div>
             <div className="space-y-2">
@@ -109,7 +130,18 @@ export function SettingsPage() {
                 required
                 minLength={8}
               />
-              <p className="text-xs text-[#64748B]">At least 8 characters</p>
+              <p className="text-xs text-[#64748B]">At least 8 characters, 1 uppercase, 1 lowercase, 1 digit</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm New Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={8}
+              />
             </div>
             <Button type="submit" disabled={changePasswordMutation.isPending}>
               {changePasswordMutation.isPending ? 'Changing...' : 'Change Password'}
