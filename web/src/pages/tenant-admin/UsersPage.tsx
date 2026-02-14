@@ -32,7 +32,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { StatusBadge } from '@/components/StatusBadge'
 import { QueryError } from '@/components/QueryError'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2, Pencil } from 'lucide-react'
 import { toast } from 'sonner'
 
 export function UsersPage() {
@@ -108,7 +108,7 @@ export function UsersPage() {
                   <TableHead>Role</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Created</TableHead>
-                  {user?.role === 'super_admin' && (
+                  {(user?.role === 'super_admin' || user?.role === 'admin') && (
                     <TableHead className="text-right">Actions</TableHead>
                   )}
                 </TableRow>
@@ -141,12 +141,19 @@ export function UsersPage() {
                       <TableCell>
                         {new Date(u.createdAt).toLocaleDateString()}
                       </TableCell>
-                      {user?.role === 'super_admin' && (
-                        <TableCell className="text-right">
-                          <UserDeleteButton
-                            user={u}
+                      {(user?.role === 'super_admin' || user?.role === 'admin') && (
+                        <TableCell className="text-right flex gap-1 justify-end">
+                          <UserEditButton
+                            targetUser={u}
+                            onUpdated={() =>
+                              queryClient.invalidateQueries({ queryKey: ['users'] })
+                            }
+                          />
+                          <UserDeactivateButton
+                            targetUser={u}
                             currentUserId={user?.id}
-                            onDeleted={() =>
+                            callerRole={user?.role ?? 'user'}
+                            onDeactivated={() =>
                               queryClient.invalidateQueries({ queryKey: ['users'] })
                             }
                           />
@@ -164,30 +171,38 @@ export function UsersPage() {
   )
 }
 
-function UserDeleteButton({
-  user,
+function UserDeactivateButton({
+  targetUser,
   currentUserId,
-  onDeleted,
+  callerRole,
+  onDeactivated,
 }: {
-  user: { id: string; name: string; email: string; role: string }
+  targetUser: { id: string; name: string; email: string; role: string }
   currentUserId: string | undefined
-  onDeleted: () => void
+  callerRole: string
+  onDeactivated: () => void
 }) {
   const [open, setOpen] = useState(false)
-  const deleteMutation = useMutation({
-    mutationFn: () => api.delete(`/users/${user.id}`).then((r) => r.data),
+  const deactivateMutation = useMutation({
+    mutationFn: () => {
+      if (callerRole === 'super_admin') {
+        return api.delete(`/users/${targetUser.id}`).then((r) => r.data)
+      }
+      return api.patch(`/users/${targetUser.id}`, { isActive: false }).then((r) => r.data)
+    },
     onSuccess: () => {
-      onDeleted()
+      onDeactivated()
       setOpen(false)
-      toast.success('User deactivated')
+      toast.success('Kullanıcı devre dışı bırakıldı')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to delete user')
+      toast.error((err as any)?.response?.data?.message ?? 'İşlem başarısız')
     },
   })
 
-  const isSelf = currentUserId === user.id
-  const isSuperAdminTarget = user.role === 'super_admin'
+  const isSelf = currentUserId === targetUser.id
+  const isSuperAdminTarget = targetUser.role === 'super_admin'
+  const isAdminTarget = targetUser.role === 'admin' && callerRole === 'admin'
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -196,13 +211,15 @@ function UserDeleteButton({
         variant="ghost"
         className="text-red-600 hover:text-red-700 hover:bg-red-50"
         onClick={() => setOpen(true)}
-        disabled={isSelf || isSuperAdminTarget}
+        disabled={isSelf || isSuperAdminTarget || isAdminTarget}
         title={
           isSelf
-            ? 'Kendinizi silemezsiniz'
+            ? 'Kendinizi devre dışı bırakamazsınız'
             : isSuperAdminTarget
-              ? 'Super admin silinemez'
-              : 'Kullanıcıyı sil'
+              ? 'Super admin devre dışı bırakılamaz'
+              : isAdminTarget
+                ? 'Admin kullanıcıyı devre dışı bırakamazsınız'
+                : 'Devre dışı bırak'
         }
       >
         <Trash2 className="h-4 w-4" />
@@ -211,7 +228,7 @@ function UserDeleteButton({
         <DialogHeader>
           <DialogTitle>Kullanıcıyı devre dışı bırak</DialogTitle>
           <DialogDescription>
-            <strong>{user.name}</strong> ({user.email}) kullanıcısını devre dışı bırakmak üzeresiniz. Hesap pasif hale gelecek ve listeden kaldırılacaktır. Emin misiniz?
+            <strong>{targetUser.name}</strong> ({targetUser.email}) kullanıcısını devre dışı bırakmak üzeresiniz. Hesap pasif hale gelecek ve listeden kaldırılacaktır. Emin misiniz?
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -220,12 +237,147 @@ function UserDeleteButton({
           </Button>
           <Button
             variant="destructive"
-            onClick={() => deleteMutation.mutate(undefined)}
-            disabled={deleteMutation.isPending}
+            onClick={() => deactivateMutation.mutate(undefined)}
+            disabled={deactivateMutation.isPending}
           >
-            {deleteMutation.isPending ? 'İşleniyor...' : 'Devre Dışı Bırak'}
+            {deactivateMutation.isPending ? 'İşleniyor...' : 'Devre Dışı Bırak'}
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function UserEditButton({
+  targetUser,
+  onUpdated,
+}: {
+  targetUser: {
+    id: string
+    name: string
+    email: string
+    numaraTaj?: string | null
+    phone?: string | null
+    role: string
+  }
+  onUpdated: () => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [name, setName] = useState(targetUser.name)
+  const [email, setEmail] = useState(targetUser.email)
+  const [numaraTaj, setNumaraTaj] = useState(targetUser.numaraTaj ?? '')
+  const [phone, setPhone] = useState(targetUser.phone ?? '')
+
+  const updateMutation = useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      api.patch(`/users/${targetUser.id}`, payload).then((r) => r.data),
+    onSuccess: () => {
+      onUpdated()
+      setOpen(false)
+      toast.success('Kullanıcı güncellendi')
+    },
+    onError: (err: unknown) => {
+      toast.error((err as any)?.response?.data?.message ?? 'Güncelleme başarısız')
+    },
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmedName = name.trim()
+    const trimmedPhone = phone.trim()
+    const trimmedNumaraTaj = numaraTaj.trim()
+    if (!trimmedName || trimmedName.length < 2) { toast.error('İsim en az 2 karakter olmalı'); return }
+    if (/^\d+$/.test(trimmedName)) { toast.error('İsim sadece rakamlardan oluşamaz'); return }
+    if (!email.trim()) { toast.error('Email zorunludur'); return }
+    if (trimmedNumaraTaj && !/^[0-9]+$/.test(trimmedNumaraTaj)) { toast.error('Numarataj sadece rakam içermeli'); return }
+    if (trimmedNumaraTaj && trimmedNumaraTaj.length < 3) { toast.error('Numarataj en az 3 haneli olmalı'); return }
+    if (trimmedPhone && !/^\+?[0-9]{10,15}$/.test(trimmedPhone)) { toast.error('Telefon 10-15 haneli olmalı'); return }
+    const payload: Record<string, unknown> = { name: trimmedName, email: email.trim() }
+    if (trimmedNumaraTaj) payload.numaraTaj = trimmedNumaraTaj
+    if (trimmedPhone) payload.phone = trimmedPhone
+    updateMutation.mutate(payload)
+  }
+
+  const handleOpen = (val: boolean) => {
+    if (val) {
+      setName(targetUser.name)
+      setEmail(targetUser.email)
+      setNumaraTaj(targetUser.numaraTaj ?? '')
+      setPhone(targetUser.phone ?? '')
+    }
+    setOpen(val)
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpen}>
+      <Button
+        size="sm"
+        variant="ghost"
+        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+        onClick={() => handleOpen(true)}
+        title="Düzenle"
+      >
+        <Pencil className="h-4 w-4" />
+      </Button>
+      <DialogContent>
+        <form onSubmit={handleSubmit}>
+          <DialogHeader>
+            <DialogTitle>Kullanıcıyı Düzenle</DialogTitle>
+            <DialogDescription>{targetUser.email}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="editName">İsim</Label>
+              <Input
+                id="editName"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                minLength={2}
+                maxLength={100}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editEmail">Email</Label>
+              <Input
+                id="editEmail"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editNumaraTaj">Numarataj</Label>
+              <Input
+                id="editNumaraTaj"
+                value={numaraTaj}
+                onChange={(e) => setNumaraTaj(e.target.value.replace(/[^0-9]/g, ''))}
+                minLength={3}
+                maxLength={20}
+                inputMode="numeric"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editPhone">Telefon</Label>
+              <Input
+                id="editPhone"
+                type="tel"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="+905551234567"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" type="button" onClick={() => setOpen(false)}>
+              İptal
+            </Button>
+            <Button type="submit" disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? 'Kaydediliyor...' : 'Kaydet'}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )
