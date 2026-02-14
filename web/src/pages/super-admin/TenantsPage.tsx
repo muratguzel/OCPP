@@ -139,10 +139,10 @@ export function TenantsPage() {
               </TableHeader>
               <TableBody>
                 {tenants.map((t: { id: string; name: string; isSuspended?: boolean; createdAt: string }) => (
-                  <TableRow key={t.id}>
+                  <TableRow key={t.id} className={t.isSuspended ? 'opacity-50' : ''}>
                     <TableCell className="font-medium">{t.name}</TableCell>
                     <TableCell>
-                      <StatusBadge status={t.isSuspended ? 'offline' : 'available'} />
+                      <StatusBadge status={t.isSuspended ? 'suspended' : 'active'} />
                     </TableCell>
                     <TableCell>{new Date(t.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
@@ -168,17 +168,25 @@ function TenantActions({
 }) {
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState(tenant.name)
+  const [suspendOpen, setSuspendOpen] = useState(false)
 
   const updateMutation = useMutation({
     mutationFn: (payload: { name?: string; isSuspended?: boolean }) =>
       api.patch(`/tenants/${tenant.id}`, payload).then((r) => r.data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       onUpdate()
       setEditing(false)
-      toast.success('Firma güncellendi')
+      setSuspendOpen(false)
+      if (variables.isSuspended === true) {
+        toast.success('Firma askıya alındı')
+      } else if (variables.isSuspended === false) {
+        toast.success('Firma aktifleştirildi')
+      } else {
+        toast.success('Firma güncellendi')
+      }
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Tenant güncellenemedi')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Firma güncellenemedi')
     },
   })
 
@@ -191,7 +199,7 @@ function TenantActions({
       toast.success('Firma silindi')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Tenant silinemedi')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Firma silinemedi')
     },
   })
 
@@ -224,37 +232,69 @@ function TenantActions({
         </>
       ) : (
         <>
-          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(true)} title="Düzenle">
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() =>
-              updateMutation.mutate({ isSuspended: !tenant.isSuspended })
-            }
-            disabled={updateMutation.isPending}
-          >
-            {tenant.isSuspended ? (
+          {tenant.isSuspended ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => updateMutation.mutate({ isSuspended: false })}
+              disabled={updateMutation.isPending}
+              title="Firmayı aktifleştir"
+            >
               <CheckCircle className="h-4 w-4 text-[#10B981]" />
-            ) : (
-              <Ban className="h-4 w-4 text-[#F59E0B]" />
-            )}
-          </Button>
+            </Button>
+          ) : (
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSuspendOpen(true)}
+                disabled={updateMutation.isPending}
+                title="Firmayı askıya al"
+              >
+                <Ban className="h-4 w-4 text-[#F59E0B]" />
+              </Button>
+              <Dialog open={suspendOpen} onOpenChange={setSuspendOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Firmayı Askıya Al</DialogTitle>
+                    <DialogDescription>
+                      <strong>{tenant.name}</strong> firmasını askıya almak üzeresiniz. Askıya alınan firmanın kullanıcıları sisteme erişemez. Devam etmek istiyor musunuz?
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setSuspendOpen(false)}>
+                      İptal
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => updateMutation.mutate({ isSuspended: true })}
+                      disabled={updateMutation.isPending}
+                    >
+                      {updateMutation.isPending ? 'Askıya Alınıyor...' : 'Askıya Al'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
           <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
             <Button
               size="sm"
               variant="ghost"
               className="text-red-600 hover:text-red-700 hover:bg-red-50"
               onClick={() => setDeleteOpen(true)}
+              title="Firmayı sil"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Tenant'ı sil</DialogTitle>
+                <DialogTitle>Firmayı Sil</DialogTitle>
                 <DialogDescription>
-                  <strong>{tenant.name}</strong> tenant'ını silmek üzeresiniz. Bu işlem geri alınamaz ve bu tenant'a bağlı tüm kullanıcılar, şarj noktaları ve işlemler de silinecektir. Emin misiniz?
+                  <strong>{tenant.name}</strong> firmasını silmek üzeresiniz. Bu işlem geri alınamaz ve bu firmaya bağlı tüm kullanıcılar, şarj noktaları ve işlemler de silinecektir. Emin misiniz?
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
