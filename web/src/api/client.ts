@@ -8,6 +8,8 @@ if (!GATEWAY_URL) {
   console.error('[OCPP] VITE_OCPP_GATEWAY_URL is not configured. Gateway features will be unavailable.')
 }
 
+// Gateway endpoints are public (no JWT auth required).
+// gatewayApi intentionally has NO auth interceptors — unlike `api` below.
 export const gatewayApi = GATEWAY_URL
   ? axios.create({ baseURL: GATEWAY_URL })
   : null
