@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { StatusBadge } from '@/components/StatusBadge'
-import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Play, Square } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface GatewayCP {
@@ -53,6 +53,7 @@ export function ChargePointsPage() {
   const { user } = useAuthStore()
   const { selectedTenantId } = useTenantFilterStore()
   const queryClient = useQueryClient()
+  const [actionPendingId, setActionPendingId] = useState<string | null>(null)
 
   const effectiveTenantId = user?.role === 'super_admin' ? selectedTenantId ?? undefined : undefined
 
@@ -79,6 +80,40 @@ export function ChargePointsPage() {
       cp,
     ])
   )
+
+  const handleStartCharge = async (cpId: string, chargePointId: string) => {
+    setActionPendingId(cpId)
+    try {
+      await api.post('/charge/start', { chargePointId })
+      toast.success('Şarj komutu gönderildi')
+      queryClient.invalidateQueries({ queryKey: ['ocpp-gateway-status'] })
+    } catch (err: unknown) {
+      toast.error((err as any)?.response?.data?.error ?? 'Şarj başlatılamadı')
+    } finally {
+      setActionPendingId(null)
+    }
+  }
+
+  const handleStopCharge = async (cpId: string, gatewayChargePointId: string) => {
+    setActionPendingId(cpId)
+    try {
+      if (!gatewayApi) throw new Error('Gateway yapılandırılmamış')
+      const { data } = await gatewayApi.get(`/charge-points/${gatewayChargePointId}/transactions`)
+      const activeTransaction = (data.transactions ?? []).find((t: { endTime?: string }) => !t.endTime)
+      if (!activeTransaction) throw new Error('Aktif işlem bulunamadı')
+      await gatewayApi.post('/remote-stop', {
+        chargePointId: gatewayChargePointId,
+        transactionId: activeTransaction.transactionId,
+      })
+      toast.success('Durdurma komutu gönderildi')
+      queryClient.invalidateQueries({ queryKey: ['ocpp-gateway-status'] })
+    } catch (err: unknown) {
+      const msg = (err as any)?.response?.data?.error ?? (err as Error).message ?? 'Şarj durdurulamadı'
+      toast.error(msg)
+    } finally {
+      setActionPendingId(null)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -143,6 +178,35 @@ export function ChargePointsPage() {
                       ? `${connectors.length} konnektör · Bağlı`
                       : 'Bağlantı Yok'}
                   </p>
+                  {isOnline && gatewayApi && (
+                    <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
+                      {!connectors.some((c) => CHARGING_STATUSES.includes(c.status?.toLowerCase() ?? '')) &&
+                       !connectors.some((c) => c.status?.toLowerCase() === 'preparing') &&
+                       connectors.some((c) => c.status?.toLowerCase() === 'available') && (
+                        <Button
+                          size="sm"
+                          className="h-8 gap-1.5"
+                          onClick={() => handleStartCharge(cp.id, cp.chargePointId)}
+                          disabled={actionPendingId === cp.id}
+                        >
+                          <Play className="h-3.5 w-3.5" />
+                          {actionPendingId === cp.id ? 'Gönderiliyor...' : 'Şarj Başlat'}
+                        </Button>
+                      )}
+                      {connectors.some((c) => CHARGING_STATUSES.includes(c.status?.toLowerCase() ?? '')) && (
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="h-8 gap-1.5"
+                          onClick={() => handleStopCharge(cp.id, gatewayCp!.chargePointId)}
+                          disabled={actionPendingId === cp.id}
+                        >
+                          <Square className="h-3.5 w-3.5" />
+                          {actionPendingId === cp.id ? 'Gönderiliyor...' : 'Şarj Durdur'}
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )
