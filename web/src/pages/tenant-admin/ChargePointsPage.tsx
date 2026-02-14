@@ -20,7 +20,7 @@ interface GatewayCP {
   connectors?: { status?: string }[]
 }
 
-const CHARGING_STATUSES = ['charging', 'suspendedev', 'suspendedevse']
+const CHARGING_STATUSES = ['charging', 'occupied', 'suspendedev', 'suspendedevse']
 const FAULTED_STATUSES = ['faulted', 'unavailable']
 
 function getPrimaryStatus(gatewayCp: GatewayCP | undefined): string {
