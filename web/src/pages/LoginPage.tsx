@@ -55,6 +55,7 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#1E293B] p-4">
       <Card className="w-full max-w-md border border-[#0F172A]">
         <CardHeader className="text-center">
+          <img src="/logo.png" alt="Sarj Modul" className="mx-auto h-16 w-16 mb-2" />
           <CardTitle className="text-2xl">Sarj Modul</CardTitle>
           <CardDescription>
             EV Charging Station Management Platform
