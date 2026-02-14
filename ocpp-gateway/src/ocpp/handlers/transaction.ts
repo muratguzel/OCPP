@@ -79,6 +79,7 @@ type TransactionEventParams = {
   evse?: { id?: number };
   connectorId?: number;
   transactionId?: string | number;
+  idToken?: string | { idToken?: string };
   transactionInfo?: {
     transactionId?: string | number;
     idToken?: string | { idToken?: string };
@@ -103,7 +104,8 @@ function normalizeTransactionId(params: TransactionEventParams): string {
 }
 
 function normalizeIdTag(params: TransactionEventParams): string {
-  const idToken = params.transactionInfo?.idToken;
+  // OCPP 2.x: idToken can be at root level or nested in transactionInfo
+  const idToken = params.idToken ?? params.transactionInfo?.idToken;
   if (idToken == null) return '';
   if (typeof idToken === 'string') return idToken;
   return (idToken as { idToken?: string }).idToken ?? '';

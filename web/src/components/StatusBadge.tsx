@@ -12,6 +12,21 @@ const statusVariants: Record<
   offline: { bg: 'bg-slate-200', border: 'border-slate-400', text: 'text-slate-600' },
   preparing: { bg: 'bg-amber-100', border: 'border-amber-500', text: 'text-amber-700' },
   error: { bg: 'bg-[#EF4444]/20', border: 'border-[#EF4444]', text: 'text-[#dc2626]' },
+  active: { bg: 'bg-[#10B981]/20', border: 'border-[#10B981]', text: 'text-[#0d9668]' },
+  suspended: { bg: 'bg-[#F59E0B]/20', border: 'border-[#F59E0B]', text: 'text-[#B45309]' },
+}
+
+const statusLabels: Record<string, string> = {
+  available: 'Uygun',
+  completed: 'Tamamlandı',
+  charging: 'Şarj Oluyor',
+  occupied: 'Meşgul',
+  faulted: 'Arızalı',
+  offline: 'Çevrimdışı',
+  preparing: 'Hazırlanıyor',
+  error: 'Hata',
+  active: 'Aktif',
+  suspended: 'Askıya Alındı',
 }
 
 export function StatusBadge({
@@ -23,6 +38,7 @@ export function StatusBadge({
 }) {
   const normalized = status?.toLowerCase() ?? 'offline'
   const variant = statusVariants[normalized] ?? statusVariants.offline
+  const label = statusLabels[normalized] ?? status
 
   return (
     <span
@@ -34,7 +50,7 @@ export function StatusBadge({
         className
       )}
     >
-      {status || 'Offline'}
+      {label || 'Çevrimdışı'}
     </span>
   )
 }

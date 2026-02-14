@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { QueryError } from '@/components/QueryError'
 
 const placeholderData = [
   { date: '-', hour: '00:00', kWh: 0 },
@@ -27,7 +28,7 @@ export function ReportsPage() {
 
   const effectiveTenantId = user?.role === 'super_admin' ? selectedTenantId ?? undefined : undefined
 
-  const { data: usageData = [] } = useQuery({
+  const { data: usageData = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['stats-usage', period, effectiveTenantId],
     queryFn: () =>
       api
@@ -50,8 +51,8 @@ export function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F172A]">Reports</h1>
-          <p className="text-[#64748B]">Usage analytics and peak charging hours</p>
+          <h1 className="text-2xl font-bold text-[#0F172A]">Raporlar</h1>
+          <p className="text-[#64748B]">Kullanım analitiği ve yoğun şarj saatleri</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -62,7 +63,7 @@ export function ReportsPage() {
                 : 'border-[#0F172A] bg-white hover:bg-slate-50'
             }`}
           >
-            Day
+            Gün
           </button>
           <button
             onClick={() => setPeriod('week')}
@@ -72,15 +73,20 @@ export function ReportsPage() {
                 : 'border-[#0F172A] bg-white hover:bg-slate-50'
             }`}
           >
-            Week
+            Hafta
           </button>
         </div>
       </div>
-      <div className="grid gap-6 lg:grid-cols-2">
+      {isLoading ? (
+        <p className="text-[#64748B]">Raporlar yükleniyor...</p>
+      ) : isError ? (
+        <QueryError message="Kullanım verisi yüklenemedi." onRetry={refetch} />
+      ) : null}
+      <div className="grid gap-6 lg:grid-cols-2" style={{ display: isLoading || isError ? 'none' : undefined }}>
         <Card>
           <CardHeader>
-            <CardTitle>Daily Usage (kWh)</CardTitle>
-            <CardDescription>Energy consumption over time</CardDescription>
+            <CardTitle>Günlük Kullanım (kWh)</CardTitle>
+            <CardDescription>Zaman içindeki enerji tüketimi</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
@@ -97,8 +103,8 @@ export function ReportsPage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Peak Charging Hours</CardTitle>
-            <CardDescription>Most active hours (same data)</CardDescription>
+            <CardTitle>Yoğun Şarj Saatleri</CardTitle>
+            <CardDescription>En aktif saatler (aynı veri)</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">

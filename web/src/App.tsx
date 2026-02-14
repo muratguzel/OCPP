@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Toaster } from 'sonner'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { LoginPage } from '@/pages/LoginPage'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
@@ -16,13 +18,16 @@ import { TransactionsPage } from '@/pages/TransactionsPage'
 import { ChargingHistoryPage } from '@/pages/end-user/ChargingHistoryPage'
 import { BalancePage } from '@/pages/end-user/BalancePage'
 import { SavingsCalculatorPage } from '@/pages/end-user/SavingsCalculatorPage'
+import { PaymentMethodsPage } from '@/pages/end-user/PaymentMethodsPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 
 const queryClient = new QueryClient()
 
 export default function App() {
   return (
+    <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
+      <Toaster position="top-right" richColors closeButton />
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
@@ -143,7 +148,7 @@ export default function App() {
               path="portal/payment"
               element={
                 <ProtectedRoute allowedRoles={['user']}>
-                  <BalancePage />
+                  <PaymentMethodsPage />
                 </ProtectedRoute>
               }
             />
@@ -153,5 +158,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </QueryClientProvider>
+    </ErrorBoundary>
   )
 }

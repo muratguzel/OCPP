@@ -1,24 +1,24 @@
 import { Card, CardContent } from '@/components/ui/card'
-import { Wallet, CircleDot } from 'lucide-react'
+import { CreditCard, CircleDot } from 'lucide-react'
 
 const planned = [
-  'Bakiye görüntüleme ve geçmiş',
-  'Havale / EFT ile bakiye yükleme',
-  'Otomatik bakiye yükleme',
-  'Harcama detayları ve raporlar',
+  'Kredi / banka kartı ekleme',
+  'Havale / EFT ödeme bilgileri',
+  'Otomatik ödeme tanımlama',
+  'Fatura bilgileri yönetimi',
 ]
 
-export function BalancePage() {
+export function PaymentMethodsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#0F172A]">Bakiye</h1>
-        <p className="text-[#64748B]">Bakiye ve yükleme seçenekleriniz</p>
+        <h1 className="text-2xl font-bold text-[#0F172A]">Ödeme Yöntemleri</h1>
+        <p className="text-[#64748B]">Ödeme yöntemlerinizi yönetin</p>
       </div>
       <Card>
         <CardContent className="flex flex-col items-center justify-center gap-4 py-12 text-center">
-          <Wallet className="h-10 w-10 text-[#94A3B8]" />
-          <p className="text-sm font-medium text-[#64748B]">Bakiye özelliği henüz kullanılamıyor</p>
+          <CreditCard className="h-10 w-10 text-[#94A3B8]" />
+          <p className="text-sm font-medium text-[#64748B]">Ödeme yöntemleri henüz kullanılamıyor</p>
           <div className="mt-2 w-full max-w-xs text-left">
             <p className="mb-2 text-xs font-medium text-[#64748B]">Planlanan özellikler:</p>
             <ul className="space-y-1.5">

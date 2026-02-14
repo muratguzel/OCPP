@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { gatewayApi } from '@/api/client'
 import {
   Card,
   CardContent,
@@ -17,8 +18,6 @@ import {
 import { StatusBadge } from '@/components/StatusBadge'
 import { format } from 'date-fns'
 
-const GATEWAY_URL = import.meta.env.VITE_OCPP_GATEWAY_URL || 'http://localhost:3000'
-
 interface ConnectorRow {
   connectorId: number
   status: string
@@ -34,14 +33,9 @@ interface ConnectedChargePoint {
   connectors: ConnectorRow[]
 }
 
-interface GatewayChargePointsResponse {
-  chargePoints: ConnectedChargePoint[]
-}
-
 async function fetchConnectedChargePoints(): Promise<ConnectedChargePoint[]> {
-  const res = await fetch(`${GATEWAY_URL}/charge-points`)
-  if (!res.ok) throw new Error('Failed to fetch connected charge points')
-  const data: GatewayChargePointsResponse = await res.json()
+  if (!gatewayApi) throw new Error('Gateway URL not configured')
+  const { data } = await gatewayApi.get<{ chargePoints: ConnectedChargePoint[] }>('/charge-points')
   return data.chargePoints ?? []
 }
 
@@ -50,32 +44,33 @@ export function ConnectedChargePointsPage() {
     queryKey: ['gateway', 'charge-points'],
     queryFn: fetchConnectedChargePoints,
     refetchInterval: 10_000,
+    enabled: !!gatewayApi,
   })
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#0F172A]">Connected Charge Points</h1>
+        <h1 className="text-2xl font-bold text-[#0F172A]">Bağlı Şarj Noktaları</h1>
         <p className="text-[#64748B]">
-          Live list from OCPP Gateway (ws). These are charge points currently connected to the gateway, not the defined charge points in the system.
+          OCPP Gateway (ws) canlı listesi. Bunlar sisteme tanımlı şarj noktaları değil, şu anda gateway'e bağlı olan şarj noktalarıdır.
         </p>
       </div>
       <Card className="border border-[#0F172A]">
         <CardHeader>
-          <CardTitle>Gateway connected list</CardTitle>
+          <CardTitle>Gateway bağlı cihaz listesi</CardTitle>
           <CardDescription>
-            Data from {GATEWAY_URL}/charge-points — refreshes every 10s
+            OCPP gateway canlı verisi — her 10 saniyede yenilenir
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow className="border-b-2 border-[#0F172A]">
-                <TableHead className="font-semibold">Charge Point ID</TableHead>
-                <TableHead className="font-semibold">Protocol</TableHead>
-                <TableHead className="font-semibold">Connected at</TableHead>
-                <TableHead className="font-semibold">Connectors</TableHead>
-                <TableHead className="font-semibold">Connector status</TableHead>
+                <TableHead className="font-semibold">Şarj Noktası ID</TableHead>
+                <TableHead className="font-semibold">Protokol</TableHead>
+                <TableHead className="font-semibold">Bağlanma Zamanı</TableHead>
+                <TableHead className="font-semibold">Konnektörler</TableHead>
+                <TableHead className="font-semibold">Konnektör Durumu</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -88,13 +83,13 @@ export function ConnectedChargePointsPage() {
               ) : isLoading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-8 text-center text-[#64748B]">
-                    Loading...
+                    Yükleniyor...
                   </TableCell>
                 </TableRow>
               ) : chargePoints.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="py-8 text-center text-[#64748B]">
-                    No charge points connected.
+                    Bağlı şarj noktası yok.
                   </TableCell>
                 </TableRow>
               ) : (

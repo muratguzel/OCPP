@@ -9,7 +9,7 @@ export const webhookTransactionStartedSchema = z.object({
   chargePointId: z.string().min(1),
   transactionId: z.union([z.number(), z.string()]),
   connectorId: z.number().int().positive(),
-  idTag: z.string().min(1),
+  idTag: z.string().default('unknown'),
   meterStart: z.number().int().optional(),
   startTime: z.string().optional(),
 });

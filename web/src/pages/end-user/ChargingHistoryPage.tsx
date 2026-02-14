@@ -16,6 +16,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { format, formatDistanceStrict } from 'date-fns'
+import { QueryError } from '@/components/QueryError'
 
 interface Transaction {
   id: string
@@ -27,7 +28,7 @@ interface Transaction {
 }
 
 export function ChargingHistoryPage() {
-  const { data: transactions = [], isLoading } = useQuery({
+  const { data: transactions = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['transactions'],
     queryFn: () => api.get<Transaction[]>('/transactions').then((r) => r.data),
   })
@@ -35,36 +36,42 @@ export function ChargingHistoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#0F172A]">Charging History</h1>
-        <p className="text-[#64748B]">Your past charging sessions</p>
+        <h1 className="text-2xl font-bold text-[#0F172A]">Şarj Geçmişi</h1>
+        <p className="text-[#64748B]">Geçmiş şarj oturumlarınız</p>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>History</CardTitle>
-          <CardDescription>Date, duration, kWh, cost, and station location</CardDescription>
+          <CardTitle>Geçmiş</CardTitle>
+          <CardDescription>Tarih, süre, kWh, tutar ve istasyon bilgisi</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Date</TableHead>
-                <TableHead>Duration</TableHead>
+                <TableHead>Tarih</TableHead>
+                <TableHead>Süre</TableHead>
                 <TableHead>kWh</TableHead>
-                <TableHead>Cost</TableHead>
-                <TableHead>Station</TableHead>
+                <TableHead>Tutar</TableHead>
+                <TableHead>İstasyon</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-[#64748B]">
-                    Loading...
+                    Yükleniyor...
+                  </TableCell>
+                </TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={5}>
+                    <QueryError message="Şarj geçmişi yüklenemedi." onRetry={refetch} />
                   </TableCell>
                 </TableRow>
               ) : transactions.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-[#64748B]">
-                    No charging history yet. Start a session at a station.
+                    Henüz şarj geçmişi yok. Bir istasyonda oturum başlatın.
                   </TableCell>
                 </TableRow>
               ) : (

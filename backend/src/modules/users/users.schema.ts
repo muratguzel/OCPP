@@ -17,6 +17,7 @@ export const updateUserSchema = z.object({
     .min(8, "Password must be at least 8 characters")
     .optional(),
   name: z.string().min(1).max(255).optional(),
+  role: z.enum(["admin", "user"]).optional(),
   isActive: z.boolean().optional(),
   numaraTaj: z.string().min(1).max(255).optional(),
   phone: z.string().min(1).max(50).optional(),

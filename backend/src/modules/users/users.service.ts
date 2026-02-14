@@ -248,6 +248,16 @@ export async function updateUser(
     updateData.phone = input.phone;
   }
 
+  if (input.role !== undefined) {
+    if (requesterRole !== "super_admin") {
+      throw new AppError(403, "Only super admin can change roles");
+    }
+    if (target.id === requesterId) {
+      throw new AppError(400, "Cannot change your own role");
+    }
+    updateData.role = input.role;
+  }
+
   const [updated] = await db
     .update(users)
     .set(updateData)

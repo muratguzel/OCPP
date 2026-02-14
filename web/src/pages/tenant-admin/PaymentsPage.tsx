@@ -201,23 +201,22 @@ export function PaymentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-[#0F172A]">Payments</h1>
+        <h1 className="text-2xl font-bold text-[#0F172A]">Ödemeler</h1>
         <p className="text-[#64748B]">
-          Filter and search payment summary, then print receipt as PDF
+          Ödeme özetini filtreleyin ve arayın, ardından PDF olarak fiş bastırın
         </p>
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Filters</CardTitle>
+          <CardTitle>Filtreler</CardTitle>
           <CardDescription>
-            Filter by date range, user (Adı Soyadı / email), or numarataj. Admin sees only their
-            tenant’s users.
+            Tarih aralığı, kullanıcı (Adı Soyadı / e-posta) veya numarataj ile filtreleyin. Yönetici yalnızca kendi firmasının kullanıcılarını görür.
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
             <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date</Label>
+              <Label htmlFor="startDate">Başlangıç Tarihi</Label>
               <Input
                 id="startDate"
                 type="date"
@@ -226,7 +225,7 @@ export function PaymentsPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="endDate">End Date</Label>
+              <Label htmlFor="endDate">Bitiş Tarihi</Label>
               <Input
                 id="endDate"
                 type="date"
@@ -279,14 +278,14 @@ export function PaymentsPage() {
       {lastSearch && (
         <Card>
           <CardHeader>
-            <CardTitle>Summary</CardTitle>
+            <CardTitle>Özet</CardTitle>
             <CardDescription>
-              Total cost, kWh, and session count for the selected period
+              Seçilen dönem için toplam tutar, kWh ve oturum sayısı
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <p className="text-[#64748B]">Loading...</p>
+              <p className="text-[#64748B]">Yükleniyor...</p>
             ) : isError ? (
               <p className="text-red-600">
                 Arama başarısız:{' '}
@@ -301,29 +300,29 @@ export function PaymentsPage() {
               <div className="space-y-4">
                 <div className="flex flex-wrap gap-6">
                   <div>
-                    <p className="text-sm text-[#64748B]">Total Cost</p>
+                    <p className="text-sm text-[#64748B]">Toplam Tutar</p>
                     <p className="text-2xl font-bold">₺{summary.totalCost.toFixed(2)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-[#64748B]">Total kWh</p>
+                    <p className="text-sm text-[#64748B]">Toplam kWh</p>
                     <p className="text-2xl font-bold">{summary.totalKwh.toFixed(2)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-[#64748B]">Sessions</p>
+                    <p className="text-sm text-[#64748B]">Oturum Sayısı</p>
                     <p className="text-2xl font-bold">{summary.sessionCount}</p>
                   </div>
                 </div>
                 {summary.breakdown.length > 0 && (
                   <div>
-                    <h3 className="mb-2 font-semibold">By User / NumaraTaj</h3>
+                    <h3 className="mb-2 font-semibold">Kullanıcı / Numarataj Bazında</h3>
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Name</TableHead>
+                          <TableHead>Ad Soyad</TableHead>
                           <TableHead>Numarataj</TableHead>
                           <TableHead>kWh</TableHead>
-                          <TableHead>Sessions</TableHead>
-                          <TableHead>Cost</TableHead>
+                          <TableHead>Oturum</TableHead>
+                          <TableHead>Tutar</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -350,7 +349,7 @@ export function PaymentsPage() {
                 </div>
               </div>
             ) : (
-              <p className="text-[#64748B]">No data for the selected filters.</p>
+              <p className="text-[#64748B]">Seçilen filtreler için veri bulunamadı.</p>
             )}
           </CardContent>
         </Card>
