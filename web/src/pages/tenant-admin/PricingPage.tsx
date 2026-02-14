@@ -18,7 +18,7 @@ import { toast } from 'sonner'
 
 export function PricingPage() {
   const { user } = useAuthStore()
-  const { selectedTenantId } = useTenantFilterStore()
+  const { selectedTenantId, setSelectedTenantId } = useTenantFilterStore()
   const queryClient = useQueryClient()
 
   const effectiveTenantId =
@@ -115,9 +115,8 @@ export function PricingPage() {
               <Label>Tenant</Label>
               <select
                 className="mt-1 w-full max-w-xs rounded border-2 border-[#0F172A] px-3 py-2"
-                value={effectiveTenantId}
-                onChange={() => {}}
-                disabled
+                value={effectiveTenantId ?? ''}
+                onChange={(e) => setSelectedTenantId(e.target.value || null)}
               >
                 <option value="">Select tenant</option>
                 {tenants.map((t: { id: string; name: string }) => (
@@ -126,7 +125,6 @@ export function PricingPage() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-[#64748B]">Use the tenant filter in the header to change.</p>
             </div>
           )}
           {isLoading ? (
