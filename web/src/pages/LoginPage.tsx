@@ -18,7 +18,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { setAuth } = useAuthStore()
+  const { setAuth, hydrateTenantName } = useAuthStore()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,6 +32,9 @@ export function LoginPage() {
         user: { id: string; email: string; name: string; role: 'super_admin' | 'admin' | 'user'; tenantId?: string }
       }>('/auth/login', { email, password })
       setAuth(data.user as User, data.accessToken, data.refreshToken)
+      hydrateTenantName((tid) =>
+        api.get<{ name: string }>(`/tenants/${tid}`).then((r) => r.data.name)
+      )
       const role = data.user.role
       if (role === 'user') {
         navigate('/portal/history')
