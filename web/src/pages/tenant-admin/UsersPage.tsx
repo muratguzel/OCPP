@@ -103,6 +103,7 @@ export function UsersPage() {
                 <TableRow>
                   <TableHead>Ad Soyad</TableHead>
                   <TableHead>E-posta</TableHead>
+                  {user?.role === 'super_admin' && <TableHead>Firma</TableHead>}
                   <TableHead>Numarataj</TableHead>
                   <TableHead>Telefon</TableHead>
                   <TableHead>Rol</TableHead>
@@ -121,6 +122,7 @@ export function UsersPage() {
                     id: string
                     name: string
                     email: string
+                    tenantId?: string | null
                     numaraTaj?: string | null
                     phone?: string | null
                     role: string
@@ -130,12 +132,23 @@ export function UsersPage() {
                     <TableRow key={u.id}>
                       <TableCell className="font-medium">{u.name}</TableCell>
                       <TableCell>{u.email}</TableCell>
+                      {user?.role === 'super_admin' && (
+                        <TableCell>
+                          {tenants.find((t: { id: string }) => t.id === u.tenantId)?.name ?? '-'}
+                        </TableCell>
+                      )}
                       <TableCell>{u.numaraTaj ?? '-'}</TableCell>
                       <TableCell>{u.phone ?? '-'}</TableCell>
-                      <TableCell>{u.role}</TableCell>
+                      <TableCell>
+                        {u.role === 'super_admin'
+                          ? 'Sistem Yöneticisi'
+                          : u.role === 'admin'
+                            ? 'Yönetici'
+                            : 'Kullanıcı'}
+                      </TableCell>
                       <TableCell>
                         <StatusBadge
-                          status={u.isActive ? 'available' : 'offline'}
+                          status={u.isActive ? 'active' : 'suspended'}
                         />
                       </TableCell>
                       <TableCell>
@@ -145,6 +158,7 @@ export function UsersPage() {
                         <TableCell className="text-right flex gap-1 justify-end">
                           <UserEditButton
                             targetUser={u}
+                            callerRole={user?.role ?? 'user'}
                             onUpdated={() =>
                               queryClient.invalidateQueries({ queryKey: ['users'] })
                             }
@@ -250,6 +264,7 @@ function UserDeactivateButton({
 
 function UserEditButton({
   targetUser,
+  callerRole,
   onUpdated,
 }: {
   targetUser: {
@@ -260,13 +275,15 @@ function UserEditButton({
     phone?: string | null
     role: string
   }
+  callerRole: string
   onUpdated: () => void
 }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState(targetUser.name)
-  const [email, setEmail] = useState(targetUser.email)
   const [numaraTaj, setNumaraTaj] = useState(targetUser.numaraTaj ?? '')
   const [phone, setPhone] = useState(targetUser.phone ?? '')
+  const [password, setPassword] = useState('')
+  const [role, setRole] = useState(targetUser.role)
 
   const updateMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
@@ -288,22 +305,25 @@ function UserEditButton({
     const trimmedNumaraTaj = numaraTaj.trim()
     if (!trimmedName || trimmedName.length < 2) { toast.error('İsim en az 2 karakter olmalı'); return }
     if (/^\d+$/.test(trimmedName)) { toast.error('İsim sadece rakamlardan oluşamaz'); return }
-    if (!email.trim()) { toast.error('Email zorunludur'); return }
     if (trimmedNumaraTaj && !/^[0-9]+$/.test(trimmedNumaraTaj)) { toast.error('Numarataj sadece rakam içermeli'); return }
     if (trimmedNumaraTaj && trimmedNumaraTaj.length < 3) { toast.error('Numarataj en az 3 haneli olmalı'); return }
     if (trimmedPhone && !/^\+?[0-9]{10,15}$/.test(trimmedPhone)) { toast.error('Telefon 10-15 haneli olmalı'); return }
-    const payload: Record<string, unknown> = { name: trimmedName, email: email.trim() }
+    if (password && password.length < 8) { toast.error('Şifre en az 8 karakter olmalı'); return }
+    const payload: Record<string, unknown> = { name: trimmedName }
     if (trimmedNumaraTaj) payload.numaraTaj = trimmedNumaraTaj
     if (trimmedPhone) payload.phone = trimmedPhone
+    if (password) payload.password = password
+    if (callerRole === 'super_admin' && role !== targetUser.role) payload.role = role
     updateMutation.mutate(payload)
   }
 
   const handleOpen = (val: boolean) => {
     if (val) {
       setName(targetUser.name)
-      setEmail(targetUser.email)
       setNumaraTaj(targetUser.numaraTaj ?? '')
       setPhone(targetUser.phone ?? '')
+      setPassword('')
+      setRole(targetUser.role)
     }
     setOpen(val)
   }
@@ -338,13 +358,13 @@ function UserEditButton({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="editEmail">Email</Label>
+              <Label htmlFor="editEmail">E-posta</Label>
               <Input
                 id="editEmail"
                 type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
+                value={targetUser.email}
+                disabled
+                className="bg-muted"
               />
             </div>
             <div className="space-y-2">
@@ -368,6 +388,32 @@ function UserEditButton({
                 placeholder="+905551234567"
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="editPassword">Yeni Şifre</Label>
+              <Input
+                id="editPassword"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Değiştirmek istemiyorsanız boş bırakın"
+                minLength={8}
+              />
+              <p className="text-xs text-[#64748B]">Boş bırakılırsa mevcut şifre korunur</p>
+            </div>
+            {callerRole === 'super_admin' && targetUser.role !== 'super_admin' && (
+              <div className="space-y-2">
+                <Label htmlFor="editRole">Rol</Label>
+                <select
+                  id="editRole"
+                  className="w-full rounded border-2 border-[#0F172A] px-3 py-2"
+                  value={role}
+                  onChange={(e) => setRole(e.target.value)}
+                >
+                  <option value="user">Kullanıcı</option>
+                  <option value="admin">Yönetici</option>
+                </select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" type="button" onClick={() => setOpen(false)}>
