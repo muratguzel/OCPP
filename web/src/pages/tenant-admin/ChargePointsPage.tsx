@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/card'
 import { StatusBadge } from '@/components/StatusBadge'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 const GATEWAY_URL = import.meta.env.VITE_OCPP_GATEWAY_URL || 'http://localhost:3000'
 
@@ -202,6 +203,10 @@ function AddChargePointModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charge-points'] })
       onSuccess()
+      toast.success('Charge point added')
+    },
+    onError: (err: unknown) => {
+      toast.error((err as any)?.response?.data?.message ?? 'Failed to add charge point')
     },
   })
 
@@ -367,6 +372,10 @@ function EditChargePointModal({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['charge-points'] })
       onSuccess()
+      toast.success('Charge point updated')
+    },
+    onError: (err: unknown) => {
+      toast.error((err as any)?.response?.data?.message ?? 'Failed to update charge point')
     },
   })
 
@@ -376,6 +385,10 @@ function EditChargePointModal({
       queryClient.invalidateQueries({ queryKey: ['charge-points'] })
       setShowDeleteConfirm(false)
       onDeleted?.()
+      toast.success('Charge point deleted')
+    },
+    onError: (err: unknown) => {
+      toast.error((err as any)?.response?.data?.message ?? 'Failed to delete charge point')
     },
   })
 

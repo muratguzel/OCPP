@@ -33,6 +33,7 @@ import { Label } from '@/components/ui/label'
 import { StatusBadge } from '@/components/StatusBadge'
 import { QueryError } from '@/components/QueryError'
 import { Plus, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export function UsersPage() {
   const [open, setOpen] = useState(false)
@@ -176,6 +177,10 @@ function UserDeleteButton({
     onSuccess: () => {
       onDeleted()
       setOpen(false)
+      toast.success('User deleted')
+    },
+    onError: (err: unknown) => {
+      toast.error((err as any)?.response?.data?.message ?? 'Failed to delete user')
     },
   })
 
@@ -244,7 +249,13 @@ function AddUserForm({
   const createMutation = useMutation({
     mutationFn: (payload: Record<string, unknown>) =>
       api.post('/users', payload).then((r) => r.data),
-    onSuccess,
+    onSuccess: () => {
+      onSuccess()
+      toast.success('User created')
+    },
+    onError: (err: unknown) => {
+      toast.error((err as any)?.response?.data?.message ?? 'Failed to create user')
+    },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
