@@ -44,27 +44,27 @@ export function Header({ onMobileMenuToggle }: { onMobileMenuToggle: () => void 
         size="icon"
         className="lg:hidden shrink-0"
         onClick={onMobileMenuToggle}
-        aria-label="Open menu"
+        aria-label="Menüyü aç"
       >
         <Menu className="h-5 w-5" />
       </Button>
       {(user?.role === 'super_admin' || user?.role === 'admin') && (
         <div className="hidden sm:flex items-center gap-2">
-          <span className="text-xs font-medium uppercase tracking-wider text-[#64748B]">Tenant:</span>
+          <span className="text-xs font-medium uppercase tracking-wider text-[#64748B]">Firma:</span>
           {user?.role === 'super_admin' && tenants.length > 0 ? (
             <select
               value={selectedTenantId ?? ''}
               onChange={(e) => setSelectedTenantId(e.target.value || null)}
               className="rounded border border-[#0F172A] bg-white px-3 py-1.5 text-sm font-medium text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]"
             >
-              <option value="">Global (All)</option>
+              <option value="">Tümü (Global)</option>
               {tenants.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
             </select>
           ) : (
             <span className="rounded border border-[#0F172A] bg-white px-3 py-1.5 text-sm font-medium text-[#0F172A]">
-              {user?.tenantName ?? 'My Tenant'}
+              {user?.tenantName ?? 'Firmam'}
             </span>
           )}
         </div>
@@ -90,7 +90,7 @@ export function Header({ onMobileMenuToggle }: { onMobileMenuToggle: () => void 
             </div>
             <DropdownMenuItem onClick={handleLogout} className="text-[#EF4444]">
               <LogOut className="mr-2 h-4 w-4" />
-              Log out
+              Çıkış Yap
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

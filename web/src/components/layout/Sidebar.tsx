@@ -24,34 +24,34 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 
 const navByRole: Record<Role, { path: string; label: string; icon: React.ElementType }[]> = {
   super_admin: [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/charge-points', label: 'Charge Points', icon: Zap },
-    { path: '/connected-charge-points', label: 'Connected Charge Points', icon: Radio },
-    { path: '/qr-codes', label: 'QR Codes', icon: QrCode },
-    { path: '/pricing', label: 'Pricing', icon: DollarSign },
-    { path: '/users', label: 'Users', icon: Users },
-    { path: '/tenants', label: 'Tenants', icon: Building2 },
-    { path: '/transactions', label: 'Transactions', icon: FileText },
-    { path: '/payments', label: 'Payments', icon: FileText },
-    { path: '/reports', label: 'Reports', icon: BarChart3 },
-    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/dashboard', label: 'Kontrol Paneli', icon: LayoutDashboard },
+    { path: '/charge-points', label: 'Şarj Noktaları', icon: Zap },
+    { path: '/connected-charge-points', label: 'Bağlı Şarj Noktaları', icon: Radio },
+    { path: '/qr-codes', label: 'QR Kodları', icon: QrCode },
+    { path: '/pricing', label: 'Fiyatlandırma', icon: DollarSign },
+    { path: '/users', label: 'Kullanıcılar', icon: Users },
+    { path: '/tenants', label: 'Firmalar', icon: Building2 },
+    { path: '/transactions', label: 'İşlemler', icon: FileText },
+    { path: '/payments', label: 'Ödemeler', icon: FileText },
+    { path: '/reports', label: 'Raporlar', icon: BarChart3 },
+    { path: '/settings', label: 'Ayarlar', icon: Settings },
   ],
   admin: [
-    { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/charge-points', label: 'Charge Points', icon: Zap },
-    { path: '/pricing', label: 'Pricing', icon: DollarSign },
-    { path: '/users', label: 'Users', icon: Users },
-    { path: '/transactions', label: 'Transactions', icon: FileText },
-    { path: '/payments', label: 'Payments', icon: FileText },
-    { path: '/reports', label: 'Reports', icon: BarChart3 },
-    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/dashboard', label: 'Kontrol Paneli', icon: LayoutDashboard },
+    { path: '/charge-points', label: 'Şarj Noktaları', icon: Zap },
+    { path: '/pricing', label: 'Fiyatlandırma', icon: DollarSign },
+    { path: '/users', label: 'Kullanıcılar', icon: Users },
+    { path: '/transactions', label: 'İşlemler', icon: FileText },
+    { path: '/payments', label: 'Ödemeler', icon: FileText },
+    { path: '/reports', label: 'Raporlar', icon: BarChart3 },
+    { path: '/settings', label: 'Ayarlar', icon: Settings },
   ],
   user: [
-    { path: '/portal/history', label: 'Charging History', icon: History },
-    { path: '/portal/balance', label: 'Balance', icon: Wallet },
-    { path: '/portal/savings', label: 'Savings Calculator', icon: Calculator },
-    { path: '/portal/payment', label: 'Payment Methods', icon: CreditCard },
-    { path: '/settings', label: 'Settings', icon: Settings },
+    { path: '/portal/history', label: 'Şarj Geçmişi', icon: History },
+    { path: '/portal/balance', label: 'Bakiye', icon: Wallet },
+    { path: '/portal/savings', label: 'Tasarruf Hesaplayıcı', icon: Calculator },
+    { path: '/portal/payment', label: 'Ödeme Yöntemleri', icon: CreditCard },
+    { path: '/settings', label: 'Ayarlar', icon: Settings },
   ],
 }
 
@@ -71,7 +71,7 @@ export function Sidebar({
   const items = navByRole[role]
 
   const initials = user?.name?.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2) ?? 'U'
-  const roleLabel = role === 'super_admin' ? 'System Admin' : role === 'admin' ? 'Tenant Admin' : 'User'
+  const roleLabel = role === 'super_admin' ? 'Sistem Yöneticisi' : role === 'admin' ? 'Firma Yöneticisi' : 'Kullanıcı'
 
   const sidebarContent = (
     <>
@@ -80,21 +80,21 @@ export function Sidebar({
         {!collapsed && (
           <div className="flex-1 min-w-0">
             <span className="block truncate text-sm font-semibold text-white">Sarj Modul</span>
-            <span className="block truncate text-xs text-slate-400">Enterprise Suite</span>
+            <span className="block truncate text-xs text-slate-400">Şarj Yönetim Sistemi</span>
           </div>
         )}
         {/* Desktop: collapse toggle / Mobile: close button */}
         <button
           onClick={onToggle}
           className="hidden lg:block rounded p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? 'Menüyü genişlet' : 'Menüyü daralt'}
         >
           {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
         </button>
         <button
           onClick={onMobileClose}
           className="lg:hidden rounded p-1.5 text-slate-400 hover:bg-white/10 hover:text-white"
-          aria-label="Close menu"
+          aria-label="Menüyü kapat"
         >
           <X className="h-5 w-5" />
         </button>

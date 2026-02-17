@@ -50,7 +50,7 @@ export function TenantsPage() {
       queryClient.invalidateQueries({ queryKey: ['tenants'] })
       setOpen(false)
       setName('')
-      toast.success('Tenant created')
+      toast.success('Firma oluşturuldu')
     },
     onError: (err: unknown) => {
       toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Tenant oluşturulamadı')
@@ -60,8 +60,8 @@ export function TenantsPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const trimmed = name.trim()
-    if (!trimmed) { toast.error('Tenant name is required'); return }
-    if (trimmed.length < 2) { toast.error('Tenant name must be at least 2 characters'); return }
+    if (!trimmed) { toast.error('Firma adı zorunludur'); return }
+    if (trimmed.length < 2) { toast.error('Firma adı en az 2 karakter olmalı'); return }
     createMutation.mutate({ name: trimmed })
   }
 
@@ -69,25 +69,25 @@ export function TenantsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0F172A]">Tenants</h1>
-          <p className="text-[#64748B]">Manage tenant organizations</p>
+          <h1 className="text-2xl font-bold text-[#0F172A]">Firmalar</h1>
+          <p className="text-[#64748B]">Firma organizasyonlarını yönetin</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="h-4 w-4" />
-              Add Tenant
+              Firma Ekle
             </Button>
           </DialogTrigger>
           <DialogContent>
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>Add Tenant</DialogTitle>
-                <DialogDescription>Create a new tenant organization.</DialogDescription>
+                <DialogTitle>Firma Ekle</DialogTitle>
+                <DialogDescription>Yeni bir firma organizasyonu oluşturun.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="space-y-2">
-                  <Label htmlFor="tenant-name">Name</Label>
+                  <Label htmlFor="tenant-name">Firma Adı</Label>
                   <Input
                     id="tenant-name"
                     value={name}
@@ -105,10 +105,10 @@ export function TenantsPage() {
                   variant="outline"
                   onClick={() => setOpen(false)}
                 >
-                  Cancel
+                  İptal
                 </Button>
                 <Button type="submit" disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'Creating...' : 'Create'}
+                  {createMutation.isPending ? 'Oluşturuluyor...' : 'Oluştur'}
                 </Button>
               </DialogFooter>
             </form>
@@ -117,32 +117,32 @@ export function TenantsPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Tenants List</CardTitle>
-          <CardDescription>All registered tenant organizations</CardDescription>
+          <CardTitle>Firma Listesi</CardTitle>
+          <CardDescription>Tüm kayıtlı firma organizasyonları</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <p className="text-[#64748B]">Loading...</p>
+            <p className="text-[#64748B]">Yükleniyor...</p>
           ) : isError ? (
-            <QueryError message="Failed to load tenants." onRetry={refetch} />
+            <QueryError message="Firmalar yüklenemedi." onRetry={refetch} />
           ) : tenants.length === 0 ? (
-            <p className="py-8 text-center text-[#64748B]">No tenants yet.</p>
+            <p className="py-8 text-center text-[#64748B]">Henüz firma yok.</p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Created</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>Firma Adı</TableHead>
+                  <TableHead>Durum</TableHead>
+                  <TableHead>Oluşturulma</TableHead>
+                  <TableHead className="text-right">İşlemler</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {tenants.map((t: { id: string; name: string; isSuspended?: boolean; createdAt: string }) => (
-                  <TableRow key={t.id}>
+                  <TableRow key={t.id} className={t.isSuspended ? 'opacity-50' : ''}>
                     <TableCell className="font-medium">{t.name}</TableCell>
                     <TableCell>
-                      <StatusBadge status={t.isSuspended ? 'offline' : 'available'} />
+                      <StatusBadge status={t.isSuspended ? 'suspended' : 'active'} />
                     </TableCell>
                     <TableCell>{new Date(t.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell className="text-right">
@@ -168,17 +168,25 @@ function TenantActions({
 }) {
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState(tenant.name)
+  const [suspendOpen, setSuspendOpen] = useState(false)
 
   const updateMutation = useMutation({
     mutationFn: (payload: { name?: string; isSuspended?: boolean }) =>
       api.patch(`/tenants/${tenant.id}`, payload).then((r) => r.data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       onUpdate()
       setEditing(false)
-      toast.success('Tenant updated')
+      setSuspendOpen(false)
+      if (variables.isSuspended === true) {
+        toast.success('Firma askıya alındı')
+      } else if (variables.isSuspended === false) {
+        toast.success('Firma aktifleştirildi')
+      } else {
+        toast.success('Firma güncellendi')
+      }
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Tenant güncellenemedi')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Firma güncellenemedi')
     },
   })
 
@@ -188,10 +196,10 @@ function TenantActions({
     onSuccess: () => {
       onUpdate()
       setDeleteOpen(false)
-      toast.success('Tenant deleted')
+      toast.success('Firma silindi')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Tenant silinemedi')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Firma silinemedi')
     },
   })
 
@@ -210,51 +218,83 @@ function TenantActions({
             variant="secondary"
             onClick={() => {
               const trimmed = editName.trim()
-              if (!trimmed) { toast.error('Tenant name is required'); return }
-              if (trimmed.length < 2) { toast.error('Tenant name must be at least 2 characters'); return }
+              if (!trimmed) { toast.error('Firma adı zorunludur'); return }
+              if (trimmed.length < 2) { toast.error('Firma adı en az 2 karakter olmalı'); return }
               updateMutation.mutate({ name: trimmed })
             }}
             disabled={updateMutation.isPending}
           >
-            Save
+            Kaydet
           </Button>
           <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>
-            Cancel
+            İptal
           </Button>
         </>
       ) : (
         <>
-          <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+          <Button size="sm" variant="ghost" onClick={() => setEditing(true)} title="Düzenle">
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() =>
-              updateMutation.mutate({ isSuspended: !tenant.isSuspended })
-            }
-            disabled={updateMutation.isPending}
-          >
-            {tenant.isSuspended ? (
+          {tenant.isSuspended ? (
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => updateMutation.mutate({ isSuspended: false })}
+              disabled={updateMutation.isPending}
+              title="Firmayı aktifleştir"
+            >
               <CheckCircle className="h-4 w-4 text-[#10B981]" />
-            ) : (
-              <Ban className="h-4 w-4 text-[#F59E0B]" />
-            )}
-          </Button>
+            </Button>
+          ) : (
+            <>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setSuspendOpen(true)}
+                disabled={updateMutation.isPending}
+                title="Firmayı askıya al"
+              >
+                <Ban className="h-4 w-4 text-[#F59E0B]" />
+              </Button>
+              <Dialog open={suspendOpen} onOpenChange={setSuspendOpen}>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Firmayı Askıya Al</DialogTitle>
+                    <DialogDescription>
+                      <strong>{tenant.name}</strong> firmasını askıya almak üzeresiniz. Askıya alınan firmanın kullanıcıları sisteme erişemez. Devam etmek istiyor musunuz?
+                    </DialogDescription>
+                  </DialogHeader>
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setSuspendOpen(false)}>
+                      İptal
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      onClick={() => updateMutation.mutate({ isSuspended: true })}
+                      disabled={updateMutation.isPending}
+                    >
+                      {updateMutation.isPending ? 'Askıya Alınıyor...' : 'Askıya Al'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </>
+          )}
           <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
             <Button
               size="sm"
               variant="ghost"
               className="text-red-600 hover:text-red-700 hover:bg-red-50"
               onClick={() => setDeleteOpen(true)}
+              title="Firmayı sil"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Tenant'ı sil</DialogTitle>
+                <DialogTitle>Firmayı Sil</DialogTitle>
                 <DialogDescription>
-                  <strong>{tenant.name}</strong> tenant'ını silmek üzeresiniz. Bu işlem geri alınamaz ve bu tenant'a bağlı tüm kullanıcılar, şarj noktaları ve işlemler de silinecektir. Emin misiniz?
+                  <strong>{tenant.name}</strong> firmasını silmek üzeresiniz. Bu işlem geri alınamaz ve bu firmaya bağlı tüm kullanıcılar, şarj noktaları ve işlemler de silinecektir. Emin misiniz?
                 </DialogDescription>
               </DialogHeader>
               <DialogFooter>
