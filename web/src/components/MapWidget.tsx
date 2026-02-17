@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/api/client'
 import { useAuthStore } from '@/store/auth'
@@ -31,8 +31,16 @@ export function MapWidget() {
     enabled: user?.role === 'super_admin',
   })
 
-  const pointsWithCoords = (chargePoints as ChargePointWithLocation[]).filter(
-    (cp) => cp.latitude && cp.longitude && parseFloat(cp.latitude) && parseFloat(cp.longitude)
+  const pointsWithCoords = useMemo(
+    () => (chargePoints as ChargePointWithLocation[]).filter(
+      (cp) => cp.latitude && cp.longitude && parseFloat(cp.latitude) && parseFloat(cp.longitude)
+    ),
+    [chargePoints]
+  )
+
+  const coordsKey = useMemo(
+    () => pointsWithCoords.map((p) => `${p.chargePointId}:${p.latitude},${p.longitude}`).join('|'),
+    [pointsWithCoords]
   )
 
   useEffect(() => {
@@ -83,7 +91,7 @@ export function MapWidget() {
       mapInstanceRef.current?.remove()
       mapInstanceRef.current = null
     }
-  }, [pointsWithCoords.length])
+  }, [coordsKey])
 
   if (user?.role !== 'super_admin') return null
 

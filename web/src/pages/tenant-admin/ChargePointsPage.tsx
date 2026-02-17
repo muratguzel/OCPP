@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/api/client'
+import { api, gatewayApi } from '@/api/client'
 import { useAuthStore } from '@/store/auth'
 import { useTenantFilterStore } from '@/store/tenantFilter'
 import { Button } from '@/components/ui/button'
@@ -15,7 +15,25 @@ import { StatusBadge } from '@/components/StatusBadge'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 
-const GATEWAY_URL = import.meta.env.VITE_OCPP_GATEWAY_URL || 'http://localhost:3000'
+interface GatewayCP {
+  chargePointId: string
+  connectors?: { status?: string }[]
+}
+
+const CHARGING_STATUSES = ['charging', 'suspendedev', 'suspendedevse']
+const FAULTED_STATUSES = ['faulted', 'unavailable']
+
+function getPrimaryStatus(gatewayCp: GatewayCP | undefined): string {
+  if (!gatewayCp) return 'Offline'
+  const connectors = gatewayCp.connectors ?? []
+  if (connectors.some((c) => CHARGING_STATUSES.includes(c.status?.toLowerCase() ?? ''))) {
+    return 'Charging'
+  }
+  if (connectors.some((c) => FAULTED_STATUSES.includes(c.status?.toLowerCase() ?? ''))) {
+    return 'Faulted'
+  }
+  return 'Available'
+}
 
 export interface ChargePointRow {
   id: string
@@ -50,15 +68,11 @@ export function ChargePointsPage() {
 
   const { data: gatewayStatus } = useQuery({
     queryKey: ['ocpp-gateway-status'],
-    queryFn: () =>
-      fetch(`${GATEWAY_URL}/charge-points`).then((r) => r.json()),
+    queryFn: () => gatewayApi!.get('/charge-points').then((r) => r.data),
     refetchInterval: 10000,
+    enabled: !!gatewayApi,
   })
 
-  interface GatewayCP {
-    chargePointId: string
-    connectors?: { status: string }[]
-  }
   const gatewayMap = new Map<string, GatewayCP>(
     (gatewayStatus?.chargePoints ?? []).map((cp: GatewayCP) => [
       cp.chargePointId.toLowerCase(),
@@ -89,18 +103,8 @@ export function ChargePointsPage() {
           {chargePoints.map((cp: ChargePointRow) => {
             const gatewayCp = gatewayMap.get(cp.chargePointId.toLowerCase()) ?? (cp.ocppIdentity ? gatewayMap.get(cp.ocppIdentity.toLowerCase()) : undefined)
             const isOnline = !!gatewayCp
-            const connectors: { status: string }[] = gatewayCp?.connectors ?? []
-            const primaryStatus = connectors.some((c) =>
-              ['Charging', 'SuspendedEV', 'SuspendedEVSE'].includes(c.status)
-            )
-              ? 'Charging'
-              : connectors.some((c) =>
-                  ['Faulted', 'Unavailable'].includes(c.status)
-                )
-                ? 'Faulted'
-                : isOnline
-                  ? 'Available'
-                  : 'Offline'
+            const connectors = gatewayCp?.connectors ?? []
+            const primaryStatus = getPrimaryStatus(gatewayCp)
             return (
               <Card
                 key={cp.id}
@@ -206,26 +210,34 @@ function AddChargePointModal({
       toast.success('Charge point added')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to add charge point')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Şarj noktası eklenemedi')
     },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     const tid = user?.role === 'super_admin' ? tenantId : user?.tenantId
-    if (tid && chargePointId.trim()) {
-      const payload: Record<string, unknown> = {
-        tenantId: tid,
-        chargePointId: chargePointId.trim(),
-        name: name.trim() || undefined,
-        connectorType,
-        maxPower: maxPower ? parseInt(maxPower, 10) : undefined,
-      }
-      if (ocppIdentity.trim()) payload.ocppIdentity = ocppIdentity.trim()
-      if (latitude) payload.latitude = parseFloat(latitude)
-      if (longitude) payload.longitude = parseFloat(longitude)
-      createMutation.mutate(payload)
+    if (!tid) { toast.error('Please select a tenant'); return }
+    const trimmedId = chargePointId.trim()
+    if (!trimmedId || trimmedId.length < 3) { toast.error('OCPP ID must be at least 3 characters'); return }
+    if (!/^[a-zA-Z0-9_.\-]+$/.test(trimmedId)) { toast.error('OCPP ID: only letters, digits, hyphens, underscores, dots'); return }
+    const trimmedName = name.trim()
+    if (!trimmedName || trimmedName.length < 2) { toast.error('Name must be at least 2 characters'); return }
+    const lat = latitude ? parseFloat(latitude) : undefined
+    const lng = longitude ? parseFloat(longitude) : undefined
+    if (lat !== undefined && (lat < -90 || lat > 90)) { toast.error('Latitude must be between -90 and 90'); return }
+    if (lng !== undefined && (lng < -180 || lng > 180)) { toast.error('Longitude must be between -180 and 180'); return }
+    const payload: Record<string, unknown> = {
+      tenantId: tid,
+      chargePointId: trimmedId,
+      name: trimmedName,
+      connectorType,
+      maxPower: maxPower ? parseInt(maxPower, 10) : undefined,
     }
+    if (ocppIdentity.trim()) payload.ocppIdentity = ocppIdentity.trim()
+    if (lat !== undefined) payload.latitude = lat
+    if (lng !== undefined) payload.longitude = lng
+    createMutation.mutate(payload)
   }
 
   return (
@@ -259,6 +271,10 @@ function AddChargePointModal({
               onChange={(e) => setChargePointId(e.target.value)}
               placeholder="CP001"
               required
+              minLength={3}
+              maxLength={50}
+              pattern="^[a-zA-Z0-9_.\-]+$"
+              title="Letters, digits, hyphens, underscores, dots only (min 3 chars)"
             />
           </div>
           <div>
@@ -272,12 +288,15 @@ function AddChargePointModal({
             <p className="mt-1 text-xs text-[#64748B]">Set when OCPP 2.x connects with a different WebSocket path (e.g. 2.0.1). Matches gateway list so start charge works.</p>
           </div>
           <div>
-            <label className="block text-sm font-medium">Name (optional)</label>
+            <label className="block text-sm font-medium">Name</label>
             <input
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Station A"
+              required
+              minLength={2}
+              maxLength={100}
             />
           </div>
           <div>
@@ -298,6 +317,7 @@ function AddChargePointModal({
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               type="number"
               min="1"
+              max="1000"
               value={maxPower}
               onChange={(e) => setMaxPower(e.target.value)}
               placeholder="22"
@@ -310,6 +330,8 @@ function AddChargePointModal({
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 type="number"
                 step="any"
+                min="-90"
+                max="90"
                 value={latitude}
                 onChange={(e) => setLatitude(e.target.value)}
                 placeholder="41.0082"
@@ -321,6 +343,8 @@ function AddChargePointModal({
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 type="number"
                 step="any"
+                min="-180"
+                max="180"
                 value={longitude}
                 onChange={(e) => setLongitude(e.target.value)}
                 placeholder="28.9784"
@@ -375,7 +399,7 @@ function EditChargePointModal({
       toast.success('Charge point updated')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to update charge point')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Şarj noktası güncellenemedi')
     },
   })
 
@@ -388,22 +412,26 @@ function EditChargePointModal({
       toast.success('Charge point deleted')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to delete charge point')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Şarj noktası silinemedi')
     },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    const trimmedName = name.trim()
+    if (!trimmedName || trimmedName.length < 2) { toast.error('Name must be at least 2 characters'); return }
+    const lat = latitude.toString().trim() ? parseFloat(latitude.toString()) : NaN
+    const lng = longitude.toString().trim() ? parseFloat(longitude.toString()) : NaN
+    if (!Number.isNaN(lat) && (lat < -90 || lat > 90)) { toast.error('Latitude must be between -90 and 90'); return }
+    if (!Number.isNaN(lng) && (lng < -180 || lng > 180)) { toast.error('Longitude must be between -180 and 180'); return }
     const payload: Record<string, unknown> = {
-      name: name.trim() || undefined,
+      name: trimmedName,
       isActive,
       connectorType,
       maxPower: maxPower ? parseInt(maxPower, 10) : undefined,
     }
     if (ocppIdentity.trim()) payload.ocppIdentity = ocppIdentity.trim()
     else payload.ocppIdentity = null
-    const lat = latitude.trim() ? parseFloat(latitude) : NaN
-    const lng = longitude.trim() ? parseFloat(longitude) : NaN
     if (!Number.isNaN(lat)) payload.latitude = lat
     if (!Number.isNaN(lng)) payload.longitude = lng
     updateMutation.mutate(payload)
@@ -419,12 +447,15 @@ function EditChargePointModal({
         <p className="mt-1 text-sm text-[#64748B]">ID: {chargePoint.chargePointId}</p>
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           <div>
-            <label className="block text-sm font-medium">Name (optional)</label>
+            <label className="block text-sm font-medium">Name</label>
             <input
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Station A"
+              required
+              minLength={2}
+              maxLength={100}
             />
           </div>
           <div className="flex items-center gap-2">
@@ -464,6 +495,7 @@ function EditChargePointModal({
               className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
               type="number"
               min="1"
+              max="1000"
               value={maxPower}
               onChange={(e) => setMaxPower(e.target.value)}
               placeholder="22"
@@ -476,6 +508,8 @@ function EditChargePointModal({
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 type="number"
                 step="any"
+                min="-90"
+                max="90"
                 value={latitude}
                 onChange={(e) => setLatitude(e.target.value)}
                 placeholder="41.0082"
@@ -487,6 +521,8 @@ function EditChargePointModal({
                 className="mt-1 w-full rounded border-2 border-[#0F172A] px-3 py-2"
                 type="number"
                 step="any"
+                min="-180"
+                max="180"
                 value={longitude}
                 onChange={(e) => setLongitude(e.target.value)}
                 placeholder="28.9784"

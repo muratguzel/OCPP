@@ -18,7 +18,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const { setAuth } = useAuthStore()
+  const { setAuth, hydrateTenantName } = useAuthStore()
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,6 +32,9 @@ export function LoginPage() {
         user: { id: string; email: string; name: string; role: 'super_admin' | 'admin' | 'user'; tenantId?: string }
       }>('/auth/login', { email, password })
       setAuth(data.user as User, data.accessToken, data.refreshToken)
+      hydrateTenantName((tid) =>
+        api.get<{ name: string }>(`/tenants/${tid}`).then((r) => r.data.name)
+      )
       const role = data.user.role
       if (role === 'user') {
         navigate('/portal/history')
@@ -52,6 +55,7 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-[#1E293B] p-4">
       <Card className="w-full max-w-md border border-[#0F172A]">
         <CardHeader className="text-center">
+          <img src="/logo.png" alt="Sarj Modul" className="mx-auto h-16 w-16 mb-2" />
           <CardTitle className="text-2xl">Sarj Modul</CardTitle>
           <CardDescription>
             EV Charging Station Management Platform
@@ -78,6 +82,7 @@ export function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
               />
             </div>
             {error && (

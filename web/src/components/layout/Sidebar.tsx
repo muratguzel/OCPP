@@ -76,9 +76,7 @@ export function Sidebar({
   const sidebarContent = (
     <>
       <div className="flex h-16 items-center gap-3 border-b border-white/10 px-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#2563EB] text-sm font-bold text-white">
-          SM
-        </div>
+        <img src="/logo.png" alt="Sarj Modul" className="h-9 w-9 shrink-0 rounded-md object-contain" />
         {!collapsed && (
           <div className="flex-1 min-w-0">
             <span className="block truncate text-sm font-semibold text-white">Sarj Modul</span>

@@ -18,7 +18,7 @@ import { toast } from 'sonner'
 
 export function PricingPage() {
   const { user } = useAuthStore()
-  const { selectedTenantId } = useTenantFilterStore()
+  const { selectedTenantId, setSelectedTenantId } = useTenantFilterStore()
   const queryClient = useQueryClient()
 
   const effectiveTenantId =
@@ -56,7 +56,7 @@ export function PricingPage() {
       toast.success('Pricing saved')
     },
     onError: (err: unknown) => {
-      toast.error((err as any)?.response?.data?.message ?? 'Failed to save pricing')
+      toast.error((err as any)?.response?.data?.error ?? (err as any)?.response?.data?.message ?? 'Fiyat kaydedilemedi')
     },
   })
 
@@ -64,8 +64,9 @@ export function PricingPage() {
     e.preventDefault()
     const price = parseFloat(pricePerKwh)
     const vat = parseFloat(vatRate)
-    if (Number.isNaN(price) || Number.isNaN(vat) || vat < 0 || vat > 100)
-      return
+    if (Number.isNaN(price) || price < 0) { toast.error('Please enter a valid price (min 0)'); return }
+    if (price > 9999) { toast.error('Price cannot exceed 9999'); return }
+    if (Number.isNaN(vat) || vat < 0 || vat > 100) { toast.error('VAT rate must be between 0 and 100'); return }
     updateMutation.mutate({ pricePerKwh: price, vatRate: vat })
   }
 
@@ -114,9 +115,8 @@ export function PricingPage() {
               <Label>Tenant</Label>
               <select
                 className="mt-1 w-full max-w-xs rounded border-2 border-[#0F172A] px-3 py-2"
-                value={effectiveTenantId}
-                onChange={() => {}}
-                disabled
+                value={effectiveTenantId ?? ''}
+                onChange={(e) => setSelectedTenantId(e.target.value || null)}
               >
                 <option value="">Select tenant</option>
                 {tenants.map((t: { id: string; name: string }) => (
@@ -125,7 +125,6 @@ export function PricingPage() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-[#64748B]">Use the tenant filter in the header to change.</p>
             </div>
           )}
           {isLoading ? (
@@ -141,9 +140,11 @@ export function PricingPage() {
                   type="number"
                   step="0.01"
                   min="0"
+                  max="9999"
                   value={pricePerKwh}
                   onChange={(e) => setPricePerKwh(e.target.value)}
                   placeholder="12.50"
+                  required
                 />
               </div>
               <div className="space-y-2">
@@ -157,6 +158,7 @@ export function PricingPage() {
                   value={vatRate}
                   onChange={(e) => setVatRate(e.target.value)}
                   placeholder="18"
+                  required
                 />
                 <p className="text-xs text-[#64748B]">
                   Use 0% if not selling electricity; set your rate if selling.

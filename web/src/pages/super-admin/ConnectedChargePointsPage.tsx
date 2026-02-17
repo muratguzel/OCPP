@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { gatewayApi } from '@/api/client'
 import {
   Card,
   CardContent,
@@ -17,8 +18,6 @@ import {
 import { StatusBadge } from '@/components/StatusBadge'
 import { format } from 'date-fns'
 
-const GATEWAY_URL = import.meta.env.VITE_OCPP_GATEWAY_URL || 'http://localhost:3000'
-
 interface ConnectorRow {
   connectorId: number
   status: string
@@ -34,14 +33,9 @@ interface ConnectedChargePoint {
   connectors: ConnectorRow[]
 }
 
-interface GatewayChargePointsResponse {
-  chargePoints: ConnectedChargePoint[]
-}
-
 async function fetchConnectedChargePoints(): Promise<ConnectedChargePoint[]> {
-  const res = await fetch(`${GATEWAY_URL}/charge-points`)
-  if (!res.ok) throw new Error('Failed to fetch connected charge points')
-  const data: GatewayChargePointsResponse = await res.json()
+  if (!gatewayApi) throw new Error('Gateway URL not configured')
+  const { data } = await gatewayApi.get<{ chargePoints: ConnectedChargePoint[] }>('/charge-points')
   return data.chargePoints ?? []
 }
 
@@ -50,6 +44,7 @@ export function ConnectedChargePointsPage() {
     queryKey: ['gateway', 'charge-points'],
     queryFn: fetchConnectedChargePoints,
     refetchInterval: 10_000,
+    enabled: !!gatewayApi,
   })
 
   return (
@@ -64,7 +59,7 @@ export function ConnectedChargePointsPage() {
         <CardHeader>
           <CardTitle>Gateway connected list</CardTitle>
           <CardDescription>
-            Data from {GATEWAY_URL}/charge-points — refreshes every 10s
+            Live data from OCPP gateway — refreshes every 10s
           </CardDescription>
         </CardHeader>
         <CardContent>
