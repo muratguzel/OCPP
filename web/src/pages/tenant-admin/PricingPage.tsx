@@ -13,6 +13,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { QueryError } from '@/components/QueryError'
 
 export function PricingPage() {
   const { user } = useAuthStore()
@@ -28,7 +29,7 @@ export function PricingPage() {
     enabled: user?.role === 'super_admin',
   })
 
-  const { data: tenant, isLoading } = useQuery({
+  const { data: tenant, isLoading, isError, refetch } = useQuery({
     queryKey: ['tenant', effectiveTenantId],
     queryFn: () =>
       api.get(`/tenants/${effectiveTenantId}`).then((r) => r.data),
@@ -124,6 +125,8 @@ export function PricingPage() {
           )}
           {isLoading ? (
             <p className="text-[#64748B]">Loading...</p>
+          ) : isError ? (
+            <QueryError message="Failed to load pricing data." onRetry={refetch} />
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">

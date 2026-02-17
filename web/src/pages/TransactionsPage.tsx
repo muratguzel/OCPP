@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { StatusBadge } from '@/components/StatusBadge'
+import { QueryError } from '@/components/QueryError'
 import { format } from 'date-fns'
 
 export function TransactionsPage() {
@@ -26,7 +27,7 @@ export function TransactionsPage() {
 
   const effectiveTenantId = user?.role === 'super_admin' ? selectedTenantId ?? undefined : undefined
 
-  const { data: transactions = [], isLoading } = useQuery({
+  const { data: transactions = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['transactions', effectiveTenantId],
     queryFn: () =>
       api
@@ -66,6 +67,12 @@ export function TransactionsPage() {
                 <TableRow>
                   <TableCell colSpan={8} className="py-8 text-center text-[#64748B]">
                     Loading...
+                  </TableCell>
+                </TableRow>
+              ) : isError ? (
+                <TableRow>
+                  <TableCell colSpan={8}>
+                    <QueryError message="Failed to load transactions." onRetry={refetch} />
                   </TableCell>
                 </TableRow>
               ) : transactions.length === 0 ? (

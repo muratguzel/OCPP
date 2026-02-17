@@ -30,13 +30,14 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Plus, Pencil, Ban, CheckCircle, Trash2 } from 'lucide-react'
 import { StatusBadge } from '@/components/StatusBadge'
+import { QueryError } from '@/components/QueryError'
 
 export function TenantsPage() {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState('')
   const queryClient = useQueryClient()
 
-  const { data: tenants = [], isLoading } = useQuery({
+  const { data: tenants = [], isLoading, isError, refetch } = useQuery({
     queryKey: ['tenants'],
     queryFn: () => api.get('/tenants').then((r) => r.data),
   })
@@ -112,6 +113,10 @@ export function TenantsPage() {
         <CardContent>
           {isLoading ? (
             <p className="text-[#64748B]">Loading...</p>
+          ) : isError ? (
+            <QueryError message="Failed to load tenants." onRetry={refetch} />
+          ) : tenants.length === 0 ? (
+            <p className="py-8 text-center text-[#64748B]">No tenants yet.</p>
           ) : (
             <Table>
               <TableHeader>
