@@ -1,0 +1,207 @@
+services: 
+  # ── Infrastructure ──────────────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sarjmodul
+    #ports:
+    #  - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app_network
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    #ports:
+    #  - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app_network
+
+
+  # ── Application Services ────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      target: development
+    restart: unless-stopped
+    #ports:
+    #  - "4000:3000"
+    environment:
+      PORT: 3000
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sarjmodul
+      REDIS_URL: redis://redis:6379
+      OCPP_GATEWAY_URL: http://ocpp-gateway:3000
+      JWT_SECRET: dev-jwt-secret-change-in-production-min16
+      JWT_REFRESH_SECRET: dev-jwt-refresh-secret-change-in-production-min16
+      SEED_EMAIL: admin@sarjmodul.com
+      SEED_PASSWORD: Admin123!
+      SEED_NAME: Super Admin
+    volumes:
+      - ./backend/src:/app/src
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app_network
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+
+      # https://app.sarjmodul.com/api  -> backend (strip /api)
+      - traefik.http.routers.backend_path.rule=Host(`app.sarjmodul.com`) && PathPrefix(`/api`)
+      - traefik.http.routers.backend_path.entrypoints=websecure
+      - traefik.http.routers.backend_path.tls.certresolver=le
+      - traefik.http.routers.backend_path.service=backend_svc
+      #- traefik.http.routers.backend_path.middlewares=backend_strip_api
+
+      #- traefik.http.middlewares.backend_strip_api.stripprefix.prefixes=/api
+      - traefik.http.services.backend_svc.loadbalancer.server.port=3000
+
+      # Opsiyonel: https://api.sarjmodul.com  -> backend
+      # - traefik.http.routers.backend_api.rule=Host(`api.sarjmodul.com`)
+      # - traefik.http.routers.backend_api.entrypoints=websecure
+      # - traefik.http.routers.backend_api.tls.certresolver=le
+      # - traefik.http.routers.backend_api.service=backend_svc
+
+  ocpp-gateway:
+    build:
+      context: ./ocpp-gateway
+      target: development
+    restart: unless-stopped
+    #ports:
+    #  - "3000:3000"
+    #  - "9220:9220"
+    environment:
+      PORT: 3000
+      OCPP_PORT: 9220
+      BACKEND_API_URL: http://backend:3000
+    volumes:
+      - ./ocpp-gateway/src:/app/src
+    depends_on:
+      - backend
+    networks:
+      - app_network
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+
+      # # Opsiyonel: https://gateway.sarjmodul.com  -> ocpp-gateway HTTP (3000)
+      - traefik.http.routers.gateway_http.rule=Host(`app.sarjmodul.com`) && PathPrefix(`/gateway`)
+      - traefik.http.routers.gateway_http.entrypoints=websecure
+      - traefik.http.routers.gateway_http.tls.certresolver=le
+      - traefik.http.routers.gateway_http.service=gateway_http_svc
+      - traefik.http.services.gateway_http_svc.loadbalancer.server.port=3000
+      - traefik.http.routers.gateway_http.middlewares=gateway_strip_api
+      
+      - traefik.http.middlewares.gateway_strip_api.stripprefix.prefixes=/gateway
+
+      # Opsiyonel: wss://ocpp.sarjmodul.com  -> ocpp websocket (9220)
+      - traefik.http.routers.gateway_ws.rule=Host(`app.sarjmodul.com`) && PathPrefix(`/gateway-ws`)
+      - traefik.http.routers.gateway_ws.entrypoints=websecure
+      - traefik.http.routers.gateway_ws.tls.certresolver=le
+      - traefik.http.routers.gateway_ws.service=gateway_ws_svc
+      - traefik.http.services.gateway_ws_svc.loadbalancer.server.port=9220
+
+      - traefik.http.routers.gateway_ws.middlewares=gateway_strip_api
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+        # Sunucuya deployda: repo kökünde .env ile VITE_OCPP_GATEWAY_URL=http://209.38.226.171:3000
+        VITE_OCPP_GATEWAY_URL: https://app.sarjmodul.com/gateway
+    restart: unless-stopped
+    #ports:
+    #  - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - app_network
+      - proxy
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+
+      - traefik.http.routers.web.rule=Host(`app.sarjmodul.com`)
+      - traefik.http.routers.web.entrypoints=websecure
+      - traefik.http.routers.web.tls.certresolver=le
+      - traefik.http.services.web.loadbalancer.server.port=80
+
+  mobile:
+    build:
+      context: ./mobile
+      dockerfile: Dockerfile
+      args:
+        WEB_BASE_URL: /mobile
+        EXPO_PUBLIC_BACKEND_API_URL: https://app.sarjmodul.com
+        EXPO_PUBLIC_OCPP_GATEWAY_URL: https://app.sarjmodul.com/gateway
+    restart: unless-stopped
+    networks:
+      - app_network
+      - proxy
+    environment:
+      - EXPO_PUBLIC_BACKEND_API_URL=https://app.sarjmodul.com/api
+      - EXPO_PUBLIC_OCPP_GATEWAY_URL=https://app.sarjmodul.com/gateway
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=proxy
+
+      # https://app.sarjmodul.com/mobile -> mobile web app (strip /mobile)
+      - traefik.http.routers.mobile.rule=Host(`app.sarjmodul.com`) && PathPrefix(`/mobile`)
+      - traefik.http.routers.mobile.entrypoints=websecure
+      - traefik.http.routers.mobile.tls.certresolver=le
+      - traefik.http.routers.mobile.service=mobile_svc
+      - traefik.http.routers.mobile.middlewares=mobile_strip
+      - traefik.http.services.mobile_svc.loadbalancer.server.port=80
+      - traefik.http.middlewares.mobile_strip.stripprefix.prefixes=/mobile
+
+  # OCPP simulation: çoklu sanal şarj noktası (multi_runner.ts)
+  # process.env.WS_URL öncelikli; yoksa .env_* içindeki değer kullanılır
+  simulation:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npx tsx multi_runner.ts"
+    environment:
+      WS_URL: ws://ocpp-gateway:9220
+    volumes:
+      - ./simulation:/app
+      - simulation_node_modules:/app/node_modules
+    depends_on:
+      - ocpp-gateway
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+  proxy:
+    name: proxy
+
+volumes:
+  pgdata:
+  redisdata:
+  simulation_node_modules:
