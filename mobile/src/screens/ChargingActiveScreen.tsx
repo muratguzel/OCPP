@@ -16,6 +16,7 @@ import { getChargePrice } from '../api/backendApi';
 import { parseEnergyKwh, parsePowerKw } from '../utils/meterParser';
 import { PRICE_PER_KWH } from '../constants/config';
 import type { MetersResponse } from '../api/ocppGateway';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export interface ChargingData {
   duration: number;
@@ -162,7 +163,7 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
         <LanguageSelector />
       </View>
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.iconCircle}>
           <Text style={styles.iconText}>⚡</Text>
         </View>
@@ -207,7 +208,7 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
         >
           <Text style={styles.stopButtonText}>{t('stopCharging')}</Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </LinearGradient>
   );
 };
@@ -231,9 +232,9 @@ const styles = StyleSheet.create({
   retryText: { color: '#fff' },
   header: { paddingHorizontal: 24, paddingBottom: 24, alignItems: 'flex-end' },
   content: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: 8,
     paddingBottom: 48,
   },
   iconCircle: {
@@ -247,7 +248,9 @@ const styles = StyleSheet.create({
   },
   iconText: { fontSize: 56 },
   title: { fontSize: 28, fontWeight: '700', color: '#fff', marginBottom: 32 },
-  metrics: { width: '100%', maxWidth: 360, marginBottom: 32 },
+  metrics: { width: '100%', maxWidth: 360, marginBottom: 32
+    
+   },
   metricCard: {
     flexDirection: 'row',
     alignItems: 'center',

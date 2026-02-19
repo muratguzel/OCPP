@@ -55,12 +55,12 @@ export default function App() {
     <GestureHandlerRootView style={styles.root}>
       <SafeAreaProvider>
         <LanguageProvider>
-          <AuthProvider>
             <NavigationContainer>
+          <AuthProvider>
               <StatusBar style="light" />
               <AppNavigator />
-            </NavigationContainer>
           </AuthProvider>
+            </NavigationContainer>
         </LanguageProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

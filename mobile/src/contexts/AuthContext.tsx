@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as backendApi from '../api/backendApi';
 import type { User } from '../api/backendApi';
+import { useNavigation } from '@react-navigation/native';
 
 interface AuthContextType {
   user: User | null;
@@ -15,7 +16,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
+  const navigation = useNavigation();
   useEffect(() => {
     (async () => {
       try {
@@ -42,6 +43,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const logout = async () => {
     await backendApi.logout();
     setUser(null);
+    navigation.navigate('Login' as never);
   };
 
   return (
