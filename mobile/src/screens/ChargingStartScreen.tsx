@@ -66,7 +66,7 @@ export const ChargingStartScreen: React.FC = () => {
     try {
       const res = await startCharge({ chargePointId: id, connectorId: 1 });
       if (res.success) {
-        navigation.navigate('ChargingActive', { chargePointId: id });
+        navigation.replace('ChargingActive', { chargePointId: id });
       } else {
         Alert.alert(t('stationInfo'), res.status || 'Start failed');
       }

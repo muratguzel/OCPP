@@ -14,6 +14,7 @@ import { ChargingStartScreen } from './src/screens/ChargingStartScreen';
 import { ChargingActiveStackScreen } from './src/screens/ChargingActiveStackScreen';
 import { ChargingSummaryScreen } from './src/screens/ChargingSummaryScreen';
 import { UsageScreen } from './src/screens/UsageScreen';
+import { PrivacyPolicyScreen } from './src/screens/PrivacyPolicyScreen';
 import type { RootStackParamList } from './src/types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -43,9 +44,10 @@ function AppNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="QR" component={QRScannerScreen} />
       <Stack.Screen name="ChargingStart" component={ChargingStartScreen} />
-      <Stack.Screen name="ChargingActive" component={ChargingActiveStackScreen} />
-      <Stack.Screen name="ChargingSummary" component={ChargingSummaryScreen} />
+      <Stack.Screen name="ChargingActive" component={ChargingActiveStackScreen} options={{ gestureEnabled: false }} />
+      <Stack.Screen name="ChargingSummary" component={ChargingSummaryScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="Usage" component={UsageScreen} />
+      <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
     </Stack.Navigator>
   );
 }

@@ -94,8 +94,11 @@ export const LoginScreen: React.FC = () => {
               secureTextEntry
             />
           </View>
-          <TouchableOpacity style={styles.forgot}>
-            <Text style={styles.forgotText}>{t('forgotPassword')}</Text>
+          <TouchableOpacity 
+            style={styles.forgot} 
+            onPress={() => navigation.navigate('PrivacyPolicy')}
+          >
+            <Text style={styles.forgotText}>Gizlilik Politikası (Privacy Policy)</Text>
           </TouchableOpacity>
           {error ? (
             <View style={styles.errorBox}>

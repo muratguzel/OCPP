@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { ChargingActiveScreen } from './ChargingActiveScreen';
@@ -18,6 +18,21 @@ export const ChargingActiveStackScreen: React.FC = () => {
     chargingData: ChargingData;
     transactionId: number | string;
   } | null>(null);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      // Prevent taking the user back if we are charging
+      if (e.data.action.type === 'GO_BACK') {
+        e.preventDefault();
+        Alert.alert(
+          t('stationInfo'),
+          typeof t('chargingInProgress') === 'string' ? t('chargingInProgress') : 'Lütfen önce şarj işlemini durdurun.',
+          [{ text: 'Tamam' }]
+        );
+      }
+    });
+    return unsubscribe;
+  }, [navigation, t]);
 
   const handleStopCharging = (data: ChargingData, transactionId: number | string) => {
     setStopData({ chargingData: data, transactionId });
