@@ -17,12 +17,13 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.egebilgi.sarjmodul",
-      "buildNumber": "1",
+      "buildNumber": "2",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000000"
@@ -31,7 +32,9 @@
     },
     "scheme": "sarjmodul",
     "extra": {
-      "eas": {}
+      "eas": {
+        "projectId": "ec0517a0-cdf6-469a-a0e3-9eed0549c66a"
+      }
     },
     "plugins": [
       "expo-font",
