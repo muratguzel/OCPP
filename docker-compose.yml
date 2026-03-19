@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: sarjmodul
     ports:
       - "5432:5432"
@@ -41,13 +41,13 @@ services:
     environment:
       PORT: 3000
       NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sarjmodul
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/sarjmodul
       REDIS_URL: redis://redis:6379
       OCPP_GATEWAY_URL: http://ocpp-gateway:3000
-      JWT_SECRET: dev-jwt-secret-change-in-production-min16
-      JWT_REFRESH_SECRET: dev-jwt-refresh-secret-change-in-production-min16
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
       SEED_EMAIL: admin@sarjmodul.com
-      SEED_PASSWORD: Admin123!
+      SEED_PASSWORD: ${SEED_PASSWORD}
       SEED_NAME: Super Admin
     volumes:
       - ./backend/src:/app/src
