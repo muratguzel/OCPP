@@ -31,3 +31,37 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
+
+/* ── Print: QR etiket çıktısı ─────────────────────────── */
+@media print {
+  /* Sidebar, header ve yazdırma dışı elemanları gizle */
+  nav, header,
+  [data-print-hide],
+  .print\\:hidden {
+    display: none !important;
+  }
+
+  /* Layout margin/padding sıfırla */
+  body { background: white !important; }
+  .lg\\:ml-64, .lg\\:ml-16 { margin-left: 0 !important; }
+  main { padding: 0 !important; }
+
+  /* QR etiket grid: A4'e 2x3 sığdır */
+  .qr-print-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16mm;
+    padding: 10mm;
+  }
+
+  .qr-print-card {
+    break-inside: avoid;
+    border: 1px dashed #ccc !important;
+    border-radius: 4mm;
+    padding: 6mm;
+    text-align: center;
+    page-break-inside: avoid;
+  }
+
+  .qr-print-card svg { margin: 0 auto; }
+}
