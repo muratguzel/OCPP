@@ -1,78 +1,159 @@
-import type { MetersResponse } from '../api/ocppGateway';
+/**
+ * Parses OCPP sampledValue entries stored by the gateway. Handles both
+ * 1.6J (top-level `unit`) and 2.x (`unitOfMeasure.unit` + `multiplier`).
+ *
+ * Replaces the previous `>=1000 ise Wh varsay` heuristic which silently
+ * gave wrong results when the device sent kWh or used a multiplier.
+ * Canonical units: energy → Wh, power → W. Callers convert to display unit.
+ */
+import type { MetersResponse, MeterValueItem } from '../api/ocppGateway';
 
-/** OCPP sampledValue-like item (1.6 / 2.x). */
-interface SampledValue {
-  measurand?: string;
+type RawSampled = {
   value?: string | number;
-  unitOfMeasure?: { unit?: string; multiplier?: number };
+  measurand?: string;
+  unit?: string;
+  phase?: string;
+  context?: string;
+  location?: string;
+  unitOfMeasure?: { unit?: string; multiplier?: number | string };
+};
+
+type NormalizedSample = {
+  measurand: string;
+  value: number;
+  unit: string;
+  phase?: string;
+  context: string;
+};
+
+const DEFAULT_MEASURAND = 'Energy.Active.Import.Register';
+const DEFAULT_CONTEXT = 'Sample.Periodic';
+
+const ENERGY_TO_WH: Record<string, number> = {
+  Wh: 1,
+  kWh: 1000,
+  MWh: 1_000_000,
+};
+
+const POWER_TO_W: Record<string, number> = {
+  W: 1,
+  kW: 1000,
+  VA: 1,
+  kVA: 1000,
+};
+
+function defaultUnitFor(measurand: string): string {
+  if (measurand.startsWith('Energy.')) return 'Wh';
+  if (measurand.startsWith('Power.')) return 'W';
+  if (measurand.startsWith('Current.')) return 'A';
+  if (measurand.startsWith('Voltage')) return 'V';
+  return '';
+}
+
+function normalizeSample(raw: unknown): NormalizedSample | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const r = raw as RawSampled;
+  if (r.value === undefined || r.value === null || r.value === '') return null;
+
+  const numericValue = typeof r.value === 'number' ? r.value : Number(r.value);
+  if (!Number.isFinite(numericValue)) return null;
+
+  const multiplierRaw = r.unitOfMeasure?.multiplier;
+  const multiplier =
+    multiplierRaw != null && Number.isFinite(Number(multiplierRaw)) ? Number(multiplierRaw) : 0;
+  const value = multiplier !== 0 ? numericValue * Math.pow(10, multiplier) : numericValue;
+
+  const measurand = r.measurand ?? DEFAULT_MEASURAND;
+  const unit = r.unitOfMeasure?.unit ?? r.unit ?? defaultUnitFor(measurand);
+
+  return {
+    measurand,
+    value,
+    unit,
+    phase: r.phase,
+    context: r.context ?? DEFAULT_CONTEXT,
+  };
+}
+
+function toWh(s: NormalizedSample): number | null {
+  if (!s.measurand.startsWith('Energy.')) return null;
+  const factor = ENERGY_TO_WH[s.unit];
+  return factor != null ? s.value * factor : null;
+}
+
+function toW(s: NormalizedSample): number | null {
+  if (!s.measurand.startsWith('Power.')) return null;
+  const factor = POWER_TO_W[s.unit];
+  return factor != null ? s.value * factor : null;
 }
 
 /**
- * Extract energy in kWh from meter values.
- * Looks for Energy.Active.Import.Register (Wh or kWh).
+ * Flatten a single `meterValues[].values` entry. The gateway stores two shapes:
+ * - From OCPP 1.6 MeterValues: array of `{timestamp, sampledValue[]}` (nested)
+ * - From OCPP 2.x TransactionEvent Updated: array of sampledValue directly (flat)
  */
-export function parseEnergyKwh(meters: MetersResponse): number {
-  const raw = lastMeterValues(meters);
-  if (!raw) return meters.meterStart != null ? meters.meterStart / 1000 : 0;
-  const energyWh = findMeasurand(raw, [
-    'Energy.Active.Import.Register',
-    'Energy.Active.Import',
-  ]);
-  if (energyWh == null) return meters.meterStart != null ? meters.meterStart / 1000 : 0;
-  const num = typeof energyWh === 'number' ? energyWh : Number(energyWh);
-  return num >= 1000 ? num / 1000 : num; // assume Wh if small
-}
-
-/**
- * Extract current power in kW from meter values.
- * Looks for Power.Active.Import (W or kW).
- */
-export function parsePowerKw(meters: MetersResponse): number | null {
-  const raw = lastMeterValues(meters);
-  if (!raw) return null;
-  const powerW = findMeasurand(raw, [
-    'Power.Active.Import',
-    'Power.Active',
-  ]);
-  if (powerW == null) return null;
-  const num = typeof powerW === 'number' ? powerW : Number(powerW);
-  return num >= 1000 ? num / 1000 : num;
-}
-
-function lastMeterValues(meters: MetersResponse): unknown {
-  const list = meters.meterValues;
-  if (!list?.length) return undefined;
-  return list[list.length - 1]?.values;
-}
-
-function findMeasurand(
-  values: unknown,
-  measurands: string[]
-): number | string | undefined {
-  const sampled = flattenSampledValues(values);
-  for (const m of measurands) {
-    for (const sv of sampled) {
-      if (sv?.measurand === m && (sv.value !== undefined && sv.value !== '')) {
-        return typeof sv.value === 'number' ? sv.value : String(sv.value);
-      }
-    }
-  }
-  return undefined;
-}
-
-/** OCPP sends meterValue as array of { timestamp, sampledValue[] }. Flatten to sampledValue[]. */
-function flattenSampledValues(values: unknown): SampledValue[] {
+function flattenOne(values: unknown): NormalizedSample[] {
   if (!Array.isArray(values)) return [];
-  const out: SampledValue[] = [];
+  const out: NormalizedSample[] = [];
   for (const item of values) {
     const row = item as { sampledValue?: unknown[] };
     if (Array.isArray(row?.sampledValue)) {
       for (const sv of row.sampledValue) {
-        out.push(sv as SampledValue);
+        const n = normalizeSample(sv);
+        if (n) out.push(n);
       }
-    } else if (row && typeof row === 'object' && 'measurand' in row) {
-      out.push(row as SampledValue);
+    } else {
+      const n = normalizeSample(item);
+      if (n) out.push(n);
     }
   }
   return out;
+}
+
+function latestSamples(meters: MetersResponse): NormalizedSample[] {
+  const list = meters.meterValues;
+  if (!list?.length) return [];
+  const last: MeterValueItem = list[list.length - 1];
+  return flattenOne(last.values);
+}
+
+/** Cumulative energy in kWh. Uses Energy.Active.Import.Register from latest sample;
+ *  falls back to meterStart (Wh assumed per OCPP 1.6 spec) if no register present. */
+export function parseEnergyKwh(meters: MetersResponse): number {
+  const samples = latestSamples(meters);
+  const registers = samples.filter(
+    (s) => s.measurand === 'Energy.Active.Import.Register' && s.context !== 'Transaction.Begin'
+  );
+  if (registers.length > 0) {
+    const wh = toWh(registers[registers.length - 1]);
+    if (wh != null) return wh / 1000;
+  }
+  return meters.meterStart != null ? meters.meterStart / 1000 : 0;
+}
+
+/** Instantaneous power in kW. Prefers Power.Active.Import without phase (total);
+ *  else sums L1+L2+L3 if available. Null if no power sample present. */
+export function parsePowerKw(meters: MetersResponse): number | null {
+  const samples = latestSamples(meters);
+  const powers = samples.filter(
+    (s) => s.measurand === 'Power.Active.Import' && s.context !== 'Transaction.Begin'
+  );
+  if (powers.length === 0) return null;
+
+  const total = powers.find((s) => !s.phase);
+  if (total) {
+    const w = toW(total);
+    return w != null ? w / 1000 : null;
+  }
+
+  const phaseW: number[] = [];
+  for (const phase of ['L1', 'L2', 'L3']) {
+    const found = powers.find((s) => s.phase === phase);
+    if (found) {
+      const w = toW(found);
+      if (w != null) phaseW.push(w);
+    }
+  }
+  if (phaseW.length === 0) return null;
+  return phaseW.reduce((a, b) => a + b, 0) / 1000;
 }

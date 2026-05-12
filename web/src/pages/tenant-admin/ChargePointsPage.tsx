@@ -101,7 +101,7 @@ export function ChargePointsPage() {
       const { data } = await gatewayApi.get(`/charge-points/${gatewayChargePointId}/transactions`)
       const activeTransaction = (data.transactions ?? []).find((t: { endTime?: string }) => !t.endTime)
       if (!activeTransaction) throw new Error('Aktif işlem bulunamadı')
-      await gatewayApi.post('/remote-stop', {
+      await api.post('/charge/stop', {
         chargePointId: gatewayChargePointId,
         transactionId: activeTransaction.transactionId,
       })

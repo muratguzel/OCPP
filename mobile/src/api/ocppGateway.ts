@@ -76,16 +76,6 @@ export async function remoteStart(params: {
   );
 }
 
-export async function remoteStop(params: {
-  chargePointId: string;
-  transactionId: number | string;
-}): Promise<{ success: boolean; status: string }> {
-  return request<{ success: boolean; status: string }>('/remote-stop', {
-    method: 'POST',
-    body: JSON.stringify(params),
-  });
-}
-
 export async function getTransactions(
   chargePointId: string
 ): Promise<{ chargePointId: string; transactions: Transaction[] }> {

@@ -5,6 +5,7 @@ import { requireRole } from "../../middleware/roleGuard.js";
 import { validate } from "../../middleware/validate.js";
 import {
   startChargeSchema,
+  stopChargeSchema,
   getPriceQuerySchema,
   webhookTransactionStartedSchema,
   webhookTransactionStoppedSchema,
@@ -25,6 +26,14 @@ router.post(
   requireRole("super_admin", "admin", "user"),
   validate(startChargeSchema),
   chargeController.startCharge
+);
+
+router.post(
+  "/stop",
+  authenticate,
+  requireRole("super_admin", "admin", "user"),
+  validate(stopChargeSchema),
+  chargeController.stopCharge
 );
 
 router.post(

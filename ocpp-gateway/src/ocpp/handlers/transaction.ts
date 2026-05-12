@@ -1,6 +1,12 @@
 /**
  * StartTransaction, StopTransaction (OCPP 1.6) and TransactionEvent (OCPP 2.x)
  * Notifies backend webhook for transaction persistence (userId tracking).
+ *
+ * Webhook calls are awaited so we can surface failures. On webhook failure
+ * we still return Accepted to the device — OCPP spec doesn't let us reject
+ * a Stop, and the device has already physically acted. Failures are logged
+ * loudly with chargePointId+transactionId so ops can reconcile (retry in
+ * step 2 of the fix plan).
  */
 import {
   saveTransaction,
@@ -9,6 +15,19 @@ import {
   updateTransactionMeter,
 } from '../../store/chargePoints.js';
 import { notifyTransactionStarted, notifyTransactionStopped } from '../../backend/client.js';
+import { flattenMeterValues, extractEnergyRegisterWh } from '../meter.js';
+
+function logWebhookFailure(
+  kind: 'start' | 'stop',
+  chargePointId: string,
+  transactionId: number | string,
+  err: unknown
+): void {
+  const msg = err instanceof Error ? err.message : String(err);
+  console.error(
+    `[transaction] ${kind} webhook FAILED chargePointId=${chargePointId} transactionId=${transactionId} err=${msg}`
+  );
+}
 
 // --- OCPP 1.6 ---
 type StartTransactionParams = {
@@ -18,10 +37,10 @@ type StartTransactionParams = {
   timestamp?: string;
 };
 
-export function startTransaction(params: StartTransactionParams, chargePointId: string): {
+export async function startTransaction(params: StartTransactionParams, chargePointId: string): Promise<{
   idTagInfo: { status: string };
   transactionId: number;
-} {
+}> {
   const transactionId = generateTransactionId();
   const startTime = params.timestamp ?? new Date().toISOString();
   saveTransaction(chargePointId, {
@@ -32,14 +51,18 @@ export function startTransaction(params: StartTransactionParams, chargePointId: 
     meterStart: params.meterStart,
     startTime,
   });
-  notifyTransactionStarted({
-    chargePointId,
-    transactionId,
-    connectorId: params.connectorId,
-    idTag: params.idTag,
-    meterStart: params.meterStart,
-    startTime,
-  });
+  try {
+    await notifyTransactionStarted({
+      chargePointId,
+      transactionId,
+      connectorId: params.connectorId,
+      idTag: params.idTag,
+      meterStart: params.meterStart,
+      startTime,
+    });
+  } catch (err) {
+    logWebhookFailure('start', chargePointId, transactionId, err);
+  }
   return {
     idTagInfo: { status: 'Accepted' },
     transactionId,
@@ -53,22 +76,25 @@ type StopTransactionParams = {
   timestamp?: string;
 };
 
-export function stopTransaction(params: StopTransactionParams, chargePointId: string): {
+export async function stopTransaction(params: StopTransactionParams, chargePointId: string): Promise<{
   idTagInfo: { status: string };
-} {
+}> {
   closeTransaction(
     chargePointId,
     params.transactionId,
     params.meterStop,
     params.timestamp
   );
-  // Always notify backend so transaction is closed even if we never had it in store (e.g. CP reconnected).
-  notifyTransactionStopped({
-    chargePointId,
-    transactionId: params.transactionId,
-    meterStop: params.meterStop,
-    endTime: params.timestamp,
-  });
+  try {
+    await notifyTransactionStopped({
+      chargePointId,
+      transactionId: params.transactionId,
+      meterStop: params.meterStop,
+      endTime: params.timestamp,
+    });
+  } catch (err) {
+    logWebhookFailure('stop', chargePointId, params.transactionId, err);
+  }
   return { idTagInfo: { status: 'Accepted' } };
 }
 
@@ -111,9 +137,9 @@ function normalizeIdTag(params: TransactionEventParams): string {
   return (idToken as { idToken?: string }).idToken ?? '';
 }
 
-export function transactionEvent(params: TransactionEventParams, chargePointId: string): {
+export async function transactionEvent(params: TransactionEventParams, chargePointId: string): Promise<{
   idTokenInfo?: { status: string };
-} {
+}> {
   const eventType = normalizeEventType(params.eventType);
   const evseId = params.evse?.id ?? 0;
   const connectorId = params.connectorId ?? evseId;
@@ -132,13 +158,17 @@ export function transactionEvent(params: TransactionEventParams, chargePointId: 
       idTag,
       startTime,
     });
-    notifyTransactionStarted({
-      chargePointId,
-      transactionId,
-      connectorId,
-      idTag,
-      startTime,
-    });
+    try {
+      await notifyTransactionStarted({
+        chargePointId,
+        transactionId,
+        connectorId,
+        idTag,
+        startTime,
+      });
+    } catch (err) {
+      logWebhookFailure('start', chargePointId, transactionId, err);
+    }
     return { idTokenInfo: { status: 'Accepted' } };
   }
 
@@ -150,18 +180,21 @@ export function transactionEvent(params: TransactionEventParams, chargePointId: 
   }
 
   if (eventType === 'Ended') {
-    const sampled = meterValueList[0]?.sampledValue as Array<{ measurand?: string; value: string }> | undefined;
-    const meterStopVal = sampled?.find((s) => s.measurand === 'Energy.Active.Import.Register');
-    const value = meterStopVal ? Number(meterStopVal.value) : undefined;
+    const samples = flattenMeterValues(meterValueList);
+    const meterStopWh = extractEnergyRegisterWh(samples);
+    const value = meterStopWh != null ? Math.round(meterStopWh) : undefined;
     const endTime = meterValueList[0]?.timestamp ?? new Date().toISOString();
     closeTransaction(chargePointId, transactionId, value);
-    // Always notify backend so transaction is closed even if we never had it in store (e.g. CP reconnected).
-    notifyTransactionStopped({
-      chargePointId,
-      transactionId,
-      meterStop: value,
-      endTime,
-    });
+    try {
+      await notifyTransactionStopped({
+        chargePointId,
+        transactionId,
+        meterStop: value,
+        endTime,
+      });
+    } catch (err) {
+      logWebhookFailure('stop', chargePointId, transactionId, err);
+    }
   }
 
   return {};

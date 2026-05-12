@@ -134,6 +134,16 @@ export async function startCharge(params: {
   });
 }
 
+export async function stopCharge(params: {
+  chargePointId: string;
+  transactionId: number | string;
+}): Promise<{ success: boolean; status: string; chargePointId: string; transactionId: number | string }> {
+  return request('/charge/stop', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+}
+
 /** Price per kWh and VAT rate for a charge point (tenant pricing). Used for live cost during charging. */
 export interface ChargePrice {
   pricePerKwh: number;

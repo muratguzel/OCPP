@@ -3,7 +3,7 @@ import { Alert } from 'react-native';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { ChargingActiveScreen } from './ChargingActiveScreen';
 import { ChargingEndScreen } from './ChargingEndScreen';
-import { remoteStop } from '../api/ocppGateway';
+import { stopCharge } from '../api/backendApi';
 import type { ChargingData } from './ChargingActiveScreen';
 import type { RootStackParamList } from '../types/navigation';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -43,7 +43,7 @@ export const ChargingActiveStackScreen: React.FC = () => {
     if (!stopData || !chargePointId) return;
     setShowEndModal(false);
     try {
-      await remoteStop({ chargePointId, transactionId: stopData.transactionId });
+      await stopCharge({ chargePointId, transactionId: stopData.transactionId });
       (navigation as unknown as { navigate: (a: string, b: object) => void }).navigate(
         'ChargingSummary',
         { chargingData: stopData.chargingData }

@@ -5,6 +5,7 @@ import { getChargePointByChargePointId } from "../charge-points/charge-points.se
 import { AppError } from "../../middleware/errorHandler.js";
 import type {
   StartChargeInput,
+  StopChargeInput,
   WebhookTransactionStartedInput,
   WebhookTransactionStoppedInput,
 } from "./charge.schema.js";
@@ -68,6 +69,90 @@ export async function startCharge(
     success: data.success ?? false,
     status: data.status ?? "Unknown",
     chargePointId: data.chargePointId ?? input.chargePointId,
+  };
+}
+
+export async function stopCharge(
+  userId: string,
+  userTenantId: string | undefined,
+  userRole: "super_admin" | "admin" | "user",
+  input: StopChargeInput
+): Promise<{
+  success: boolean;
+  status: string;
+  chargePointId: string;
+  transactionId: number | string;
+}> {
+  const ocppTxId = String(input.transactionId);
+
+  const [tx] = await db
+    .select()
+    .from(transactions)
+    .where(
+      and(
+        sql`lower(${transactions.chargePointId}) = lower(${input.chargePointId})`,
+        eq(transactions.ocppTransactionId, ocppTxId)
+      )
+    )
+    .limit(1);
+
+  if (!tx) {
+    throw new AppError(404, "Transaction not found");
+  }
+  if (tx.endTime) {
+    throw new AppError(400, "Transaction already ended");
+  }
+
+  if (userRole === "user") {
+    if (tx.userId !== userId) {
+      throw new AppError(403, "You did not start this transaction");
+    }
+  } else if (userRole === "admin") {
+    if (tx.tenantId !== userTenantId) {
+      throw new AppError(403, "Transaction does not belong to your organization");
+    }
+  }
+
+  console.log(
+    `[charge] stop requested userId=${userId} role=${userRole} chargePointId=${input.chargePointId} txId=${ocppTxId}`
+  );
+
+  const url = `${GATEWAY_URL}/remote-stop`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chargePointId: input.chargePointId,
+      transactionId: input.transactionId,
+    }),
+  });
+
+  const contentType = res.headers.get("content-type") ?? "";
+  let data: { success?: boolean; status?: string; chargePointId?: string; error?: string };
+  if (contentType.includes("application/json")) {
+    data = (await res.json()) as typeof data;
+  } else {
+    const text = await res.text();
+    const preview = text.slice(0, 80).replace(/\s+/g, " ");
+    throw new AppError(
+      502,
+      `OCPP Gateway returned non-JSON (got ${contentType}). ` +
+        `Check OCPP_GATEWAY_URL (${GATEWAY_URL}). Response preview: ${preview}`
+    );
+  }
+
+  if (!res.ok) {
+    throw new AppError(
+      res.status >= 500 ? 502 : res.status,
+      data.error ?? "Gateway request failed"
+    );
+  }
+
+  return {
+    success: data.success ?? false,
+    status: data.status ?? "Unknown",
+    chargePointId: data.chargePointId ?? input.chargePointId,
+    transactionId: input.transactionId,
   };
 }
 

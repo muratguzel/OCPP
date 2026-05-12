@@ -23,6 +23,27 @@ export async function startCharge(
   }
 }
 
+export async function stopCharge(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.user!.userId;
+    const userTenantId = req.user!.tenantId;
+    const userRole = req.user!.role as "super_admin" | "admin" | "user";
+    const result = await chargeService.stopCharge(
+      userId,
+      userTenantId,
+      userRole,
+      req.body
+    );
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function webhookTransactionStarted(
   req: Request,
   res: Response,
