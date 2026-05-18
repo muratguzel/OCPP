@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
@@ -19,6 +19,8 @@ export const ChargingActiveStackScreen: React.FC = () => {
     chargingData: ChargingData;
     transactionId: number | string;
   } | null>(null);
+  // Guards against double-navigation when user-stop and charger-stop race each other.
+  const navigatedRef = useRef<boolean>(false);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('beforeRemove', (e) => {
@@ -46,13 +48,18 @@ export const ChargingActiveStackScreen: React.FC = () => {
     try {
       await stopCharge({ chargePointId, transactionId: stopData.transactionId });
       await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_CHARGE_POINT_ID);
+      if (navigatedRef.current) {
+        setStopData(null);
+        return;
+      }
+      navigatedRef.current = true;
       (navigation as unknown as { navigate: (a: string, b: object) => void }).navigate(
         'ChargingSummary',
         { chargingData: stopData.chargingData }
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      Alert.alert(t('stationInfo'), msg);
+      if (!navigatedRef.current) Alert.alert(t('stationInfo'), msg);
     }
     setStopData(null);
   };
@@ -62,11 +69,26 @@ export const ChargingActiveStackScreen: React.FC = () => {
     setStopData(null);
   };
 
+  // Charger ended the session on its own (cable unplug, RFID, etc.).
+  // Skip the stop API call (gateway already closed the transaction) and the confirm modal.
+  const handleChargingEnded = async (data: ChargingData) => {
+    if (navigatedRef.current) return;
+    navigatedRef.current = true;
+    setShowEndModal(false);
+    setStopData(null);
+    await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_CHARGE_POINT_ID);
+    (navigation as unknown as { navigate: (a: string, b: object) => void }).navigate(
+      'ChargingSummary',
+      { chargingData: data }
+    );
+  };
+
   return (
     <>
       <ChargingActiveScreen
         chargePointId={chargePointId}
         onStopCharging={handleStopCharging}
+        onChargingEnded={handleChargingEnded}
       />
       <ChargingEndScreen
         visible={showEndModal}

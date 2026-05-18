@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -30,11 +29,13 @@ const POLL_INTERVAL_MS = 5000;
 interface ChargingActiveScreenProps {
   chargePointId: string;
   onStopCharging: (data: ChargingData, transactionId: number | string) => void;
+  onChargingEnded?: (data: ChargingData) => void;
 }
 
 export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
   chargePointId,
   onStopCharging,
+  onChargingEnded,
 }) => {
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -47,6 +48,7 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
   const [vatRate, setVatRate] = useState<number>(0);
   const [now, setNow] = useState<number>(() => Date.now());
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const endedRef = useRef<boolean>(false);
 
   // 1s tick for duration display; independent of 5s meter polling.
   useEffect(() => {
@@ -119,6 +121,21 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
   const unitPrice = pricePerKwh ?? PRICE_PER_KWH;
   const subtotal = energyKwh * unitPrice;
   const cost = subtotal * (1 + vatRate / 100);
+
+  // Detect charger-initiated stop: when meterStop appears in polling response,
+  // the session was ended by the device (cable unplug, RFID, etc.). Fire once.
+  useEffect(() => {
+    if (endedRef.current) return;
+    if (meters?.meterStop == null) return;
+    endedRef.current = true;
+    onChargingEnded?.({
+      duration: durationSeconds,
+      energyUsed: energyKwh,
+      cost,
+      startTime,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [meters?.meterStop]);
 
   const formatDuration = (seconds: number) => {
     const m = Math.floor(seconds / 60);
