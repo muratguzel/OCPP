@@ -14,8 +14,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSelector } from '../components/LanguageSelector';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getChargePoints, type ChargePoint } from '../api/ocppGateway';
-import { startCharge } from '../api/backendApi';
+import { startCharge, STORAGE_KEYS } from '../api/backendApi';
 import { OCPP_GATEWAY_URL } from '../constants/config';
 import type { RootStackParamList } from '../types/navigation';
 
@@ -66,6 +67,7 @@ export const ChargingStartScreen: React.FC = () => {
     try {
       const res = await startCharge({ chargePointId: id, connectorId: 1 });
       if (res.success) {
+        await AsyncStorage.setItem(STORAGE_KEYS.ACTIVE_CHARGE_POINT_ID, id);
         navigation.replace('ChargingActive', { chargePointId: id });
       } else {
         Alert.alert(t('stationInfo'), res.status || 'Start failed');

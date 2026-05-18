@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Alert } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRoute, useNavigation, RouteProp } from '@react-navigation/native';
 import { ChargingActiveScreen } from './ChargingActiveScreen';
 import { ChargingEndScreen } from './ChargingEndScreen';
-import { stopCharge } from '../api/backendApi';
+import { stopCharge, STORAGE_KEYS } from '../api/backendApi';
 import type { ChargingData } from './ChargingActiveScreen';
 import type { RootStackParamList } from '../types/navigation';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -44,6 +45,7 @@ export const ChargingActiveStackScreen: React.FC = () => {
     setShowEndModal(false);
     try {
       await stopCharge({ chargePointId, transactionId: stopData.transactionId });
+      await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_CHARGE_POINT_ID);
       (navigation as unknown as { navigate: (a: string, b: object) => void }).navigate(
         'ChargingSummary',
         { chargingData: stopData.chargingData }

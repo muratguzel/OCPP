@@ -5,10 +5,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { BACKEND_API_URL } from '../constants/config';
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   ACCESS_TOKEN: 'accessToken',
   REFRESH_TOKEN: 'refreshToken',
   USER: 'user',
+  ACTIVE_CHARGE_POINT_ID: 'activeChargePointId',
 } as const;
 
 export interface User {

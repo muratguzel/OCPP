@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, Text, StyleSheet as RNStyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -15,14 +16,47 @@ import { ChargingActiveStackScreen } from './src/screens/ChargingActiveStackScre
 import { ChargingSummaryScreen } from './src/screens/ChargingSummaryScreen';
 import { UsageScreen } from './src/screens/UsageScreen';
 import { PrivacyPolicyScreen } from './src/screens/PrivacyPolicyScreen';
+import { getTransactions, STORAGE_KEYS } from './src/api/backendApi';
 import type { RootStackParamList } from './src/types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
+// Network failure → trust local (user may be at the station with poor signal).
+// Backend confirms session ended → clear local and return null.
+async function resolveActiveChargePointId(): Promise<string | null> {
+  const stored = await AsyncStorage.getItem(STORAGE_KEYS.ACTIVE_CHARGE_POINT_ID);
+  if (!stored) return null;
+  try {
+    const txs = await getTransactions();
+    const stillActive = txs.some((tx) => tx.chargePointId === stored && !tx.endTime);
+    if (stillActive) return stored;
+    await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_CHARGE_POINT_ID);
+    return null;
+  } catch {
+    return stored;
+  }
+}
+
 function AppNavigator() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [activeChargePointId, setActiveChargePointId] = useState<string | null | undefined>(
+    undefined
+  );
 
-  if (isLoading) {
+  useEffect(() => {
+    let cancelled = false;
+    if (!isAuthenticated) {
+      setActiveChargePointId(null);
+      return;
+    }
+    setActiveChargePointId(undefined);
+    resolveActiveChargePointId()
+      .then((id) => { if (!cancelled) setActiveChargePointId(id); })
+      .catch(() => { if (!cancelled) setActiveChargePointId(null); });
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
+
+  if (isLoading || (isAuthenticated && activeChargePointId === undefined)) {
     return (
       <View style={loadingStyles.container}>
         <ActivityIndicator size="large" color="#22d3ee" />
@@ -31,10 +65,16 @@ function AppNavigator() {
     );
   }
 
+  const initialRoute: keyof RootStackParamList = !isAuthenticated
+    ? 'Login'
+    : activeChargePointId
+      ? 'ChargingActive'
+      : 'QR';
+
   return (
     <Stack.Navigator
-      key={isAuthenticated ? 'auth' : 'guest'}
-      initialRouteName={isAuthenticated ? 'QR' : 'Login'}
+      key={`${isAuthenticated ? 'auth' : 'guest'}-${activeChargePointId ?? 'none'}`}
+      initialRouteName={initialRoute}
       screenOptions={{
         headerShown: false,
         contentStyle: { backgroundColor: '#000000' },
@@ -44,7 +84,12 @@ function AppNavigator() {
       <Stack.Screen name="Login" component={LoginScreen} />
       <Stack.Screen name="QR" component={QRScannerScreen} />
       <Stack.Screen name="ChargingStart" component={ChargingStartScreen} />
-      <Stack.Screen name="ChargingActive" component={ChargingActiveStackScreen} options={{ gestureEnabled: false }} />
+      <Stack.Screen
+        name="ChargingActive"
+        component={ChargingActiveStackScreen}
+        options={{ gestureEnabled: false }}
+        initialParams={activeChargePointId ? { chargePointId: activeChargePointId } : undefined}
+      />
       <Stack.Screen name="ChargingSummary" component={ChargingSummaryScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="Usage" component={UsageScreen} />
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
