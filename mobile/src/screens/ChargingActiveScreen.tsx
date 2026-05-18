@@ -45,7 +45,14 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [pricePerKwh, setPricePerKwh] = useState<number | null>(null);
   const [vatRate, setVatRate] = useState<number>(0);
+  const [now, setNow] = useState<number>(() => Date.now());
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // 1s tick for duration display; independent of 5s meter polling.
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
 
   // Fetch tenant price for this charge point (for accurate cost display)
   useEffect(() => {
@@ -106,9 +113,7 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
     };
   }, [chargePointId, transactionId]);
 
-  const durationSeconds = Math.floor(
-    (Date.now() - startTime.getTime()) / 1000
-  );
+  const durationSeconds = Math.floor((now - startTime.getTime()) / 1000);
   const energyKwh = meters ? parseEnergyKwh(meters) : 0;
   const powerKw = meters ? parsePowerKw(meters) : null;
   const unitPrice = pricePerKwh ?? PRICE_PER_KWH;
