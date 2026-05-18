@@ -117,18 +117,19 @@ function latestSamples(meters: MetersResponse): NormalizedSample[] {
   return flattenOne(last.values);
 }
 
-/** Cumulative energy in kWh. Uses Energy.Active.Import.Register from latest sample;
- *  falls back to meterStart (Wh assumed per OCPP 1.6 spec) if no register present. */
+/** Energy delivered in this session, in kWh.
+ *  Register is cumulative (lifetime meter total), so subtract meterStart (Wh) to get session delta. */
 export function parseEnergyKwh(meters: MetersResponse): number {
+  const meterStartWh = meters.meterStart ?? 0;
   const samples = latestSamples(meters);
   const registers = samples.filter(
     (s) => s.measurand === 'Energy.Active.Import.Register' && s.context !== 'Transaction.Begin'
   );
   if (registers.length > 0) {
     const wh = toWh(registers[registers.length - 1]);
-    if (wh != null) return wh / 1000;
+    if (wh != null) return Math.max(0, wh - meterStartWh) / 1000;
   }
-  return meters.meterStart != null ? meters.meterStart / 1000 : 0;
+  return 0;
 }
 
 /** Instantaneous power in kW. Prefers Power.Active.Import without phase (total);
