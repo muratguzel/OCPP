@@ -9,13 +9,11 @@ ENV WEB_BASE_URL=$WEB_BASE_URL
 ENV EXPO_PUBLIC_BACKEND_API_URL=$EXPO_PUBLIC_BACKEND_API_URL
 ENV EXPO_PUBLIC_OCPP_GATEWAY_URL=$EXPO_PUBLIC_OCPP_GATEWAY_URL
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
-
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+COPY package.json package-lock.json ./
+RUN npm ci
 COPY . .
-RUN pnpm exec expo export --platform web
+RUN npx expo export --platform web
 
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
