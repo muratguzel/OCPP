@@ -70,6 +70,14 @@ export const translations = {
     history: 'Geçmiş',
     noUsageYet: 'Henüz şarj işlemi bulunmuyor.',
     chargingInProgress: 'Şarj işlemi devam ediyor. Çıkmak için önce durdurun.',
+
+    // Account Screen
+    account: 'Hesabım',
+    profile: 'Profil',
+    licensePlate: 'Plaka',
+    notSet: 'Belirtilmemiş',
+    name: 'Ad Soyad',
+    role: 'Rol',
   },
   en: {
     // Login Screen
@@ -141,6 +149,14 @@ export const translations = {
     history: 'History',
     noUsageYet: 'No charging sessions yet.',
     chargingInProgress: 'Charging in progress. Please stop charging to exit.',
+
+    // Account Screen
+    account: 'My Account',
+    profile: 'Profile',
+    licensePlate: 'License Plate',
+    notSet: 'Not set',
+    name: 'Name',
+    role: 'Role',
   },
   de: {
     // Login Screen
@@ -212,6 +228,14 @@ export const translations = {
     history: 'Verlauf',
     noUsageYet: 'Noch keine Ladevorgänge.',
     chargingInProgress: 'Ladevorgang läuft. Bitte stoppen Sie den Ladevorgang zum Beenden.',
+
+    // Account Screen
+    account: 'Mein Konto',
+    profile: 'Profil',
+    licensePlate: 'Kennzeichen',
+    notSet: 'Nicht festgelegt',
+    name: 'Name',
+    role: 'Rolle',
   },
   fr: {
     // Login Screen
@@ -283,6 +307,14 @@ export const translations = {
     history: 'Historique',
     noUsageYet: 'Aucune session de charge pour le moment.',
     chargingInProgress: 'Recharge en cours. Veuillez arrêter la charge pour quitter.',
+
+    // Account Screen
+    account: 'Mon compte',
+    profile: 'Profil',
+    licensePlate: 'Plaque',
+    notSet: 'Non défini',
+    name: 'Nom',
+    role: 'Rôle',
   },
   ar: {
     // Login Screen
@@ -354,6 +386,14 @@ export const translations = {
     history: 'سجل',
     noUsageYet: 'لا توجد جلسات شحن حتى الآن.',
     chargingInProgress: 'الشحن جارٍ. يرجى إيقاف الشحن للخروج.',
+
+    // Account Screen
+    account: 'حسابي',
+    profile: 'الملف الشخصي',
+    licensePlate: 'لوحة السيارة',
+    notSet: 'غير محدد',
+    name: 'الاسم',
+    role: 'الدور',
   },
 };
 

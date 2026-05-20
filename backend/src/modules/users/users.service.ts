@@ -15,6 +15,7 @@ const userListColumns = {
   tenantId: true,
   numaraTaj: true,
   phone: true,
+  licensePlate: true,
   isActive: true,
   createdById: true,
   createdAt: true,
@@ -64,6 +65,7 @@ export async function getUserById(
       tenantId: true,
       numaraTaj: true,
       phone: true,
+      licensePlate: true,
       isActive: true,
       createdById: true,
       createdAt: true,
@@ -159,6 +161,7 @@ export async function createUser(
       tenantId,
       numaraTaj: input.numaraTaj,
       phone: input.phone,
+      licensePlate: input.licensePlate ?? null,
       createdById: creatorId,
     })
     .returning({
@@ -169,6 +172,7 @@ export async function createUser(
       tenantId: users.tenantId,
       numaraTaj: users.numaraTaj,
       phone: users.phone,
+      licensePlate: users.licensePlate,
       isActive: users.isActive,
       createdAt: users.createdAt,
     });
@@ -238,6 +242,10 @@ export async function updateUser(
     updateData.numaraTaj = input.numaraTaj;
   }
 
+  if (input.licensePlate !== undefined) {
+    updateData.licensePlate = input.licensePlate;
+  }
+
   if (input.phone !== undefined) {
     const existingPhone = await db.query.users.findFirst({
       where: eq(users.phone, input.phone),
@@ -270,6 +278,7 @@ export async function updateUser(
       tenantId: users.tenantId,
       numaraTaj: users.numaraTaj,
       phone: users.phone,
+      licensePlate: users.licensePlate,
       isActive: users.isActive,
       updatedAt: users.updatedAt,
     });

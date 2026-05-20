@@ -6,6 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
 import { LanguageSelector } from '../components/LanguageSelector';
 import type { RootStackParamList } from '../types/navigation';
 import type { ChargingData } from './ChargingActiveScreen';
@@ -15,6 +16,7 @@ type Route = RouteProp<RootStackParamList, 'ChargingSummary'>;
 
 export const ChargingSummaryScreen: React.FC = () => {
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const route = useRoute<Route>();
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
@@ -92,6 +94,15 @@ export const ChargingSummaryScreen: React.FC = () => {
               <Text style={styles.detailValue}>{formatTime(endTime)}</Text>
             </View>
           </View>
+          {user?.licensePlate ? (
+            <View style={styles.detailRow}>
+              <Text style={styles.detailIcon}>🚗</Text>
+              <View style={styles.detailBody}>
+                <Text style={styles.detailLabel}>{t('licensePlate')}</Text>
+                <Text style={styles.detailValue}>{user.licensePlate}</Text>
+              </View>
+            </View>
+          ) : null}
         </View>
         <TouchableOpacity
           style={styles.receiptButton}

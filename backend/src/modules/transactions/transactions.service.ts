@@ -14,7 +14,7 @@ export async function listTransactions(
 ) {
   const withUser = {
     user: {
-      columns: { id: true, email: true, name: true },
+      columns: { id: true, email: true, name: true, licensePlate: true },
     },
   };
 

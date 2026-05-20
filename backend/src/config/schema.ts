@@ -34,6 +34,7 @@ export const users = pgTable("users", {
   tenantId: uuid("tenant_id").references(() => tenants.id, { onDelete: "cascade" }),
   numaraTaj: varchar("numara_taj", { length: 255 }),
   phone: varchar("phone", { length: 50 }).unique(),
+  licensePlate: varchar("license_plate", { length: 20 }),
   createdById: uuid("created_by_id").references((): any => users.id, {
     onDelete: "set null",
   }),

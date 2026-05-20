@@ -8,6 +8,7 @@ export const createUserSchema = z.object({
   tenantId: z.string().uuid().optional(),
   numaraTaj: z.string().min(1, "Numarataj is required").max(255),
   phone: z.string().min(1, "Phone number is required").max(50),
+  licensePlate: z.string().max(20).optional().nullable(),
 });
 
 export const updateUserSchema = z.object({
@@ -21,6 +22,7 @@ export const updateUserSchema = z.object({
   isActive: z.boolean().optional(),
   numaraTaj: z.string().min(1).max(255).optional(),
   phone: z.string().min(1).max(50).optional(),
+  licensePlate: z.string().max(20).optional().nullable(),
 });
 
 export type CreateUserInput = z.infer<typeof createUserSchema>;

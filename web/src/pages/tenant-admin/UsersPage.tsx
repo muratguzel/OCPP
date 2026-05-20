@@ -106,6 +106,7 @@ export function UsersPage() {
                   {user?.role === 'super_admin' && <TableHead>Firma</TableHead>}
                   <TableHead>Numarataj</TableHead>
                   <TableHead>Telefon</TableHead>
+                  <TableHead>Plaka</TableHead>
                   <TableHead>Rol</TableHead>
                   <TableHead>Durum</TableHead>
                   <TableHead>Oluşturulma</TableHead>
@@ -125,6 +126,7 @@ export function UsersPage() {
                     tenantId?: string | null
                     numaraTaj?: string | null
                     phone?: string | null
+                    licensePlate?: string | null
                     role: string
                     isActive: boolean
                     createdAt: string
@@ -139,6 +141,7 @@ export function UsersPage() {
                       )}
                       <TableCell>{u.numaraTaj ?? '-'}</TableCell>
                       <TableCell>{u.phone ?? '-'}</TableCell>
+                      <TableCell>{u.licensePlate ?? '-'}</TableCell>
                       <TableCell>
                         {u.role === 'super_admin'
                           ? 'Sistem Yöneticisi'
@@ -273,6 +276,7 @@ function UserEditButton({
     email: string
     numaraTaj?: string | null
     phone?: string | null
+    licensePlate?: string | null
     role: string
   }
   callerRole: string
@@ -282,6 +286,7 @@ function UserEditButton({
   const [name, setName] = useState(targetUser.name)
   const [numaraTaj, setNumaraTaj] = useState(targetUser.numaraTaj ?? '')
   const [phone, setPhone] = useState(targetUser.phone ?? '')
+  const [licensePlate, setLicensePlate] = useState(targetUser.licensePlate ?? '')
   const [password, setPassword] = useState('')
   const [role, setRole] = useState(targetUser.role)
 
@@ -303,15 +308,18 @@ function UserEditButton({
     const trimmedName = name.trim()
     const trimmedPhone = phone.trim()
     const trimmedNumaraTaj = numaraTaj.trim()
+    const trimmedPlate = licensePlate.trim().toUpperCase()
     if (!trimmedName || trimmedName.length < 2) { toast.error('İsim en az 2 karakter olmalı'); return }
     if (/^\d+$/.test(trimmedName)) { toast.error('İsim sadece rakamlardan oluşamaz'); return }
     if (trimmedNumaraTaj && !/^[0-9]+$/.test(trimmedNumaraTaj)) { toast.error('Numarataj sadece rakam içermeli'); return }
     if (trimmedNumaraTaj && trimmedNumaraTaj.length < 3) { toast.error('Numarataj en az 3 haneli olmalı'); return }
     if (trimmedPhone && !/^\+?[0-9]{10,15}$/.test(trimmedPhone)) { toast.error('Telefon 10-15 haneli olmalı'); return }
+    if (trimmedPlate && !/^[A-Z0-9 ]{4,15}$/.test(trimmedPlate)) { toast.error('Plaka 4-15 karakter, harf ve rakam içerebilir'); return }
     if (password && password.length < 8) { toast.error('Şifre en az 8 karakter olmalı'); return }
     const payload: Record<string, unknown> = { name: trimmedName }
     if (trimmedNumaraTaj) payload.numaraTaj = trimmedNumaraTaj
     if (trimmedPhone) payload.phone = trimmedPhone
+    payload.licensePlate = trimmedPlate || null
     if (password) payload.password = password
     if (callerRole === 'super_admin' && role !== targetUser.role) payload.role = role
     updateMutation.mutate(payload)
@@ -322,6 +330,7 @@ function UserEditButton({
       setName(targetUser.name)
       setNumaraTaj(targetUser.numaraTaj ?? '')
       setPhone(targetUser.phone ?? '')
+      setLicensePlate(targetUser.licensePlate ?? '')
       setPassword('')
       setRole(targetUser.role)
     }
@@ -389,6 +398,17 @@ function UserEditButton({
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="editLicensePlate">Plaka</Label>
+              <Input
+                id="editLicensePlate"
+                value={licensePlate}
+                onChange={(e) => setLicensePlate(e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, ''))}
+                placeholder="örn. 34 ABC 123"
+                maxLength={15}
+              />
+              <p className="text-xs text-[#64748B]">İsteğe bağlı</p>
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="editPassword">Yeni Şifre</Label>
               <Input
                 id="editPassword"
@@ -443,6 +463,7 @@ function AddUserForm({
   const [name, setName] = useState('')
   const [numaraTaj, setNumaraTaj] = useState('')
   const [phone, setPhone] = useState('')
+  const [licensePlate, setLicensePlate] = useState('')
   const [tenantId, setTenantId] = useState('')
   const [role, setRole] = useState<'user' | 'admin'>('user')
 
@@ -463,6 +484,7 @@ function AddUserForm({
     const trimmedName = name.trim()
     const trimmedPhone = phone.trim()
     const trimmedNumaraTaj = numaraTaj.trim()
+    const trimmedPlate = licensePlate.trim().toUpperCase()
     if (!trimmedName || trimmedName.length < 2) { toast.error('İsim en az 2 karakter olmalı'); return }
     if (/^\d+$/.test(trimmedName)) { toast.error('İsim sadece rakamlardan oluşamaz'); return }
     if (!email.trim()) { toast.error('E-posta zorunludur'); return }
@@ -470,6 +492,7 @@ function AddUserForm({
     if (!trimmedNumaraTaj || !/^[0-9]+$/.test(trimmedNumaraTaj)) { toast.error('Numarataj sadece rakam içermeli'); return }
     if (trimmedNumaraTaj.length < 3) { toast.error('Numarataj en az 3 haneli olmalı'); return }
     if (!trimmedPhone || !/^\+?[0-9]{10,15}$/.test(trimmedPhone)) { toast.error('Telefon 10-15 haneli olmalı, isteğe bağlı + ile başlayabilir'); return }
+    if (trimmedPlate && !/^[A-Z0-9 ]{4,15}$/.test(trimmedPlate)) { toast.error('Plaka 4-15 karakter, harf ve rakam içerebilir'); return }
     const payload: Record<string, unknown> = {
       email: email.trim(),
       password,
@@ -478,6 +501,7 @@ function AddUserForm({
       phone: trimmedPhone,
       role,
     }
+    if (trimmedPlate) payload.licensePlate = trimmedPlate
     if (isSuperAdmin && tenantId) payload.tenantId = tenantId
     createMutation.mutate(payload)
   }
@@ -547,6 +571,17 @@ function AddUserForm({
             pattern="^\+?[0-9]{10,15}$"
             title="10-15 haneli telefon numarası, isteğe bağlı + ile başlayabilir"
           />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="licensePlate">Plaka</Label>
+          <Input
+            id="licensePlate"
+            value={licensePlate}
+            onChange={(e) => setLicensePlate(e.target.value.toUpperCase().replace(/[^A-Z0-9 ]/g, ''))}
+            placeholder="örn. 34 ABC 123"
+            maxLength={15}
+          />
+          <p className="text-xs text-[#64748B]">İsteğe bağlı</p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="name">Ad Soyad</Label>

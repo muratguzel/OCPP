@@ -7,5 +7,6 @@ export type RootStackParamList = {
   ChargingActive: { chargePointId: string };
   ChargingSummary: { chargingData: ChargingData };
   Usage: undefined;
+  Account: undefined;
   PrivacyPolicy: undefined;
 };

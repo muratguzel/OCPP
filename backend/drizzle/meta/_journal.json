@@ -15,6 +15,13 @@
       "when": 1739289600000,
       "tag": "0001_tenant_delete_cascade_users",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1779267338575,
+      "tag": "0002_thin_shaman",
+      "breakpoints": true
     }
   ]
 }

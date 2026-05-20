@@ -55,6 +55,7 @@ export function TransactionsPage() {
                 <TableHead className="font-semibold">OTURUM ID</TableHead>
                 <TableHead className="font-semibold">ŞARJ NOKTASI</TableHead>
                 <TableHead className="font-semibold">KULLANICI</TableHead>
+                <TableHead className="font-semibold">PLAKA</TableHead>
                 <TableHead className="font-semibold">BAŞLANGIÇ</TableHead>
                 <TableHead className="font-semibold">SÜRE</TableHead>
                 <TableHead className="font-semibold">ENERJİ (KWH)</TableHead>
@@ -65,19 +66,19 @@ export function TransactionsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-8 text-center text-[#64748B]">
+                  <TableCell colSpan={9} className="py-8 text-center text-[#64748B]">
                     Yükleniyor...
                   </TableCell>
                 </TableRow>
               ) : isError ? (
                 <TableRow>
-                  <TableCell colSpan={8}>
+                  <TableCell colSpan={9}>
                     <QueryError message="İşlemler yüklenemedi." onRetry={refetch} />
                   </TableCell>
                 </TableRow>
               ) : transactions.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-8 text-center text-[#64748B]">
+                  <TableCell colSpan={9} className="py-8 text-center text-[#64748B]">
                     Henüz işlem yok.
                   </TableCell>
                 </TableRow>
@@ -89,7 +90,7 @@ export function TransactionsPage() {
                   endTime?: string | null
                   kwh?: string | null
                   cost?: string | null
-                  user?: { email?: string; name?: string } | null
+                  user?: { email?: string; name?: string; licensePlate?: string | null } | null
                 }) => {
                   const start = new Date(tx.startTime)
                   const end = tx.endTime ? new Date(tx.endTime) : null
@@ -100,6 +101,7 @@ export function TransactionsPage() {
                       <TableCell className="font-mono text-sm">{tx.id.slice(0, 8)}...</TableCell>
                       <TableCell>{tx.chargePointId}</TableCell>
                       <TableCell className="text-sm">{userDisplay}</TableCell>
+                      <TableCell className="text-sm">{tx.user?.licensePlate ?? '-'}</TableCell>
                       <TableCell>{format(start, 'PPp')}</TableCell>
                       <TableCell>{duration}</TableCell>
                       <TableCell>{tx.kwh ?? '-'}</TableCell>

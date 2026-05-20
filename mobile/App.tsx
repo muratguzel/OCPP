@@ -15,6 +15,7 @@ import { ChargingStartScreen } from './src/screens/ChargingStartScreen';
 import { ChargingActiveStackScreen } from './src/screens/ChargingActiveStackScreen';
 import { ChargingSummaryScreen } from './src/screens/ChargingSummaryScreen';
 import { UsageScreen } from './src/screens/UsageScreen';
+import { AccountScreen } from './src/screens/AccountScreen';
 import { PrivacyPolicyScreen } from './src/screens/PrivacyPolicyScreen';
 import { getTransactions, STORAGE_KEYS } from './src/api/backendApi';
 import type { RootStackParamList } from './src/types/navigation';
@@ -92,6 +93,7 @@ function AppNavigator() {
       />
       <Stack.Screen name="ChargingSummary" component={ChargingSummaryScreen} options={{ gestureEnabled: false }} />
       <Stack.Screen name="Usage" component={UsageScreen} />
+      <Stack.Screen name="Account" component={AccountScreen} />
       <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
     </Stack.Navigator>
   );

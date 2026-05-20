@@ -109,7 +109,13 @@ export const QRScannerScreen: React.FC = () => {
             onPress={() => navigation.navigate('Usage')}
             style={styles.usageButton}
           >
-            <Text style={styles.usageButtonText}>My Usage</Text>
+            <Text style={styles.usageButtonText}>{t('usage')}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Account')}
+            style={styles.accountButton}
+          >
+            <Text style={styles.accountButtonText}>{t('account')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => logout()}
@@ -185,6 +191,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   usageButtonText: { color: '#22d3ee', fontWeight: '600', fontSize: 14 },
+  accountButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(168, 85, 247, 0.2)',
+    borderRadius: 10,
+  },
+  accountButtonText: { color: '#c084fc', fontWeight: '600', fontSize: 14 },
   logoutButton: {
     paddingVertical: 8,
     paddingHorizontal: 12,

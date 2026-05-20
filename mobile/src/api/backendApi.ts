@@ -18,6 +18,9 @@ export interface User {
   name: string;
   role: 'super_admin' | 'admin' | 'user';
   tenantId?: string | null;
+  numaraTaj?: string | null;
+  phone?: string | null;
+  licensePlate?: string | null;
 }
 
 export interface LoginResponse {
