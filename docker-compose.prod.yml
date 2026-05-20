@@ -5,7 +5,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
+      POSTGRES_PASSWORD: 1V1oCmLBzL2tw75xuMcSvFlYRQsF2N
       POSTGRES_DB: sarjmodul
     #ports:
     #  - "5432:5432"
@@ -46,7 +46,7 @@ services:
     environment:
       PORT: 3000
       NODE_ENV: development
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/sarjmodul
+      DATABASE_URL: postgresql://postgres:1V1oCmLBzL2tw75xuMcSvFlYRQsF2N@postgres:5432/sarjmodul
       REDIS_URL: redis://redis:6379
       OCPP_GATEWAY_URL: http://ocpp-gateway:3000
       JWT_SECRET: dev-jwt-secret-change-in-production-min16
