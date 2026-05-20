@@ -83,3 +83,21 @@ export async function getPrice(
     next(err);
   }
 }
+
+/**
+ * Gateway tarafından restart/reconnect'te çağrılır — açık transaction'ları
+ * memory'ye seed etmek için. Webhook'larla aynı güven sınırında (internal).
+ */
+export async function getActiveTransactions(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const { chargePointId } = req.params as { chargePointId: string };
+    const list = await chargeService.getActiveTransactionsForChargePoint(chargePointId);
+    res.json({ chargePointId, transactions: list });
+  } catch (err) {
+    next(err);
+  }
+}

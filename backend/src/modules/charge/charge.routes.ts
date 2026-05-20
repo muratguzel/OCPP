@@ -48,4 +48,11 @@ router.post(
   chargeController.webhookTransactionStopped
 );
 
+// Internal: gateway calls this on boot/reconnect to rehydrate open transactions.
+// Same trust boundary as the webhooks above (no auth — gateway is internal).
+router.get(
+  "/internal/active-transactions/:chargePointId",
+  chargeController.getActiveTransactions
+);
+
 export default router;

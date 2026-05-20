@@ -258,6 +258,49 @@ export async function webhookTransactionStopped(
     .where(eq(transactions.id, existing.id));
 }
 
+/**
+ * Açık (endTime IS NULL) transaction'ları döner. Gateway, restart veya boot
+ * sonrası in-memory state boşken bunu çağırıp Map'i seed eder; cihaz queue'dan
+ * gönderdiği StopTransaction'ı doğru transactionId'ye eşleyebilsin diye.
+ */
+export async function getActiveTransactionsForChargePoint(
+  chargePointId: string
+): Promise<
+  Array<{
+    ocppTransactionId: string;
+    connectorId: number;
+    idTag: string;
+    meterStart: number | null;
+    startTime: string;
+  }>
+> {
+  const rows = await db
+    .select({
+      ocppTransactionId: transactions.ocppTransactionId,
+      connectorId: transactions.connectorId,
+      idTag: transactions.idTag,
+      meterStart: transactions.meterStart,
+      startTime: transactions.startTime,
+    })
+    .from(transactions)
+    .where(
+      and(
+        sql`lower(${transactions.chargePointId}) = lower(${chargePointId})`,
+        isNull(transactions.endTime)
+      )
+    );
+
+  return rows
+    .filter((r) => r.ocppTransactionId != null)
+    .map((r) => ({
+      ocppTransactionId: r.ocppTransactionId as string,
+      connectorId: r.connectorId,
+      idTag: r.idTag,
+      meterStart: r.meterStart,
+      startTime: r.startTime.toISOString(),
+    }));
+}
+
 /** Get price per kWh and VAT rate for a charge point (from its tenant). Used by mobile for live cost display. */
 export async function getPriceForChargePoint(chargePointId: string): Promise<{
   pricePerKwh: number;
