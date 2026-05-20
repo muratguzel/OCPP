@@ -24,7 +24,7 @@ type ChargePoint = {
 export function attachHandlers(cp: ChargePoint): void {
   const id = cp.identity;
 
-  cp.handle('BootNotification', async () => bootNotification());
+  cp.handle('BootNotification', async () => bootNotification(id));
   cp.handle('Heartbeat', async () => heartbeat());
   cp.handle('StatusNotification', async ({ params }: { params: unknown }) =>
     statusNotification(params as Parameters<typeof statusNotification>[0], id)

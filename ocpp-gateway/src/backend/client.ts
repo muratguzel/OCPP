@@ -118,3 +118,42 @@ export async function notifyTransactionStopped(payload: {
     endTime: payload.endTime,
   });
 }
+
+export interface BackendActiveTransaction {
+  ocppTransactionId: string;
+  connectorId: number;
+  idTag: string;
+  meterStart: number | null;
+  startTime: string;
+}
+
+/**
+ * Gateway boot/reconnect sonrası açık transaction'ları DB'den çeker. Memory
+ * boşken seed etmek içindir — başarısız olursa fatal değil, sadece UX kaybı.
+ */
+export async function fetchActiveTransactions(
+  chargePointId: string
+): Promise<BackendActiveTransaction[]> {
+  const url = `${BACKEND_API_URL}/api/charge/internal/active-transactions/${encodeURIComponent(chargePointId)}`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), ATTEMPT_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, { signal: controller.signal });
+    if (!res.ok) {
+      console.warn(
+        `[backend] fetchActiveTransactions ${chargePointId} HTTP ${res.status}`
+      );
+      return [];
+    }
+    const data = (await res.json()) as { transactions?: BackendActiveTransaction[] };
+    return data.transactions ?? [];
+  } catch (e) {
+    const reason = controller.signal.aborted
+      ? `timeout after ${ATTEMPT_TIMEOUT_MS}ms`
+      : e instanceof Error ? e.message : String(e);
+    console.warn(`[backend] fetchActiveTransactions ${chargePointId} failed: ${reason}`);
+    return [];
+  } finally {
+    clearTimeout(timeout);
+  }
+}

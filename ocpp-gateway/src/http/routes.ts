@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import {
   getConnectedCount,
-  getAllChargePoints,
+  getOnlineChargePoints,
   getChargePointByIdentity,
 } from '../store/chargePoints.js';
 import { getClient, getConnectedIdentities } from '../ocpp/clients.js';
@@ -22,7 +22,10 @@ router.get('/health', (_req, res) => {
  * Includes per-connector status (Available, Charging, Faulted, etc.) for dashboard.
  */
 router.get('/charge-points', (_req, res) => {
-  const list = getAllChargePoints().map((cp) => ({
+  // Sadece şu anda canlı WebSocket bağlantısı olan CP'ler. Offline ama açık
+  // transaction'ı olan CP'ler store'da kalır ama buradan dönmez (semantik:
+  // "şu anda bağlı olanlar").
+  const list = getOnlineChargePoints().map((cp) => ({
     chargePointId: cp.chargePointId,
     protocol: cp.protocol,
     connectedAt: cp.connectedAt,

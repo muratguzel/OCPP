@@ -27,6 +27,8 @@ export interface ChargePointState {
   chargePointId: string;
   protocol: string;
   connectedAt: string;
+  online: boolean;
+  disconnectedAt?: string;
   connectors: Map<number, ConnectorStatus>;
   transactions: Map<number | string, TransactionRecord>;
 }
@@ -34,11 +36,26 @@ export interface ChargePointState {
 const chargePoints = new Map<string, ChargePointState>();
 let nextTransactionId = 1;
 
+/**
+ * Idempotent: reconnect aynı chargePointId ile geldiğinde mevcut state
+ * (transactions, connectors) korunur. Açık transaction varken WebSocket kopup
+ * tekrar bağlandığında, cihaz offline kuyruğundan StopTransaction'ı yolladığı
+ * anda transactionId hâlâ memory'de olur ve doğru kapanır.
+ */
 export function registerChargePoint(chargePointId: string, protocol: string): ChargePointState {
+  const existing = chargePoints.get(chargePointId);
+  if (existing) {
+    existing.protocol = protocol;
+    existing.connectedAt = new Date().toISOString();
+    existing.online = true;
+    existing.disconnectedAt = undefined;
+    return existing;
+  }
   const state: ChargePointState = {
     chargePointId,
     protocol,
     connectedAt: new Date().toISOString(),
+    online: true,
     connectors: new Map(),
     transactions: new Map(),
   };
@@ -46,6 +63,20 @@ export function registerChargePoint(chargePointId: string, protocol: string): Ch
   return state;
 }
 
+/**
+ * Sadece WebSocket bağlantısı için "offline" işaretler. ChargePointState
+ * (özellikle açık transaction'lar) silinmez — OCPP semantiğinde cihaz
+ * disconnect olsa bile şarja devam edebilir ve queue'daki mesajları reconnect
+ * sonrası gönderir.
+ */
+export function markChargePointOffline(chargePointId: string): void {
+  const cp = chargePoints.get(chargePointId);
+  if (!cp) return;
+  cp.online = false;
+  cp.disconnectedAt = new Date().toISOString();
+}
+
+/** Hard remove. Sadece test/admin teardown senaryolarında kullanılmalı. */
 export function unregisterChargePoint(chargePointId: string): void {
   chargePoints.delete(chargePointId);
 }
@@ -69,8 +100,13 @@ export function getAllChargePoints(): ChargePointState[] {
   return Array.from(chargePoints.values());
 }
 
+/** Online (canlı WebSocket) olanları döner. UI ve /health bunu kullanmalı. */
+export function getOnlineChargePoints(): ChargePointState[] {
+  return Array.from(chargePoints.values()).filter((cp) => cp.online);
+}
+
 export function getConnectedCount(): number {
-  return chargePoints.size;
+  return getOnlineChargePoints().length;
 }
 
 export function updateConnectorStatus(
@@ -107,6 +143,25 @@ export function saveTransaction(
   cp.transactions.set(record.transactionId, full);
 }
 
+/**
+ * Number/string transactionId fark etmeksizin kaydı bulur. Hydrate edilen
+ * (DB'den seed) kayıtlar string key ile, gateway-içinde üretilen (OCPP 1.6
+ * StartTransaction) kayıtlar number key ile saklanabilir; bu fonksiyon her
+ * iki gösterimi de dener.
+ */
+function lookupTransaction(
+  cp: ChargePointState,
+  transactionId: number | string
+): TransactionRecord | undefined {
+  const exact = cp.transactions.get(transactionId);
+  if (exact) return exact;
+  if (typeof transactionId === 'number') {
+    return cp.transactions.get(String(transactionId));
+  }
+  const asNum = Number(transactionId);
+  return Number.isFinite(asNum) ? cp.transactions.get(asNum) : undefined;
+}
+
 export function updateTransactionMeter(
   chargePointId: string,
   transactionId: number | string,
@@ -114,7 +169,8 @@ export function updateTransactionMeter(
   values: unknown
 ): void {
   const cp = chargePoints.get(chargePointId);
-  const tx = cp?.transactions.get(transactionId);
+  if (!cp) return;
+  const tx = lookupTransaction(cp, transactionId);
   if (!tx) return;
   tx.meterValues.push({ timestamp, values });
 }
@@ -130,7 +186,8 @@ export function closeTransaction(
   endTime?: string
 ): TransactionRecord | undefined {
   const cp = chargePoints.get(chargePointId);
-  const tx = cp?.transactions.get(transactionId);
+  if (!cp) return undefined;
+  const tx = lookupTransaction(cp, transactionId);
   if (!tx) return undefined;
   if (tx.endTime) return undefined; // already closed, idempotent
   tx.meterStop = meterStop;
@@ -142,7 +199,9 @@ export function getTransaction(
   chargePointId: string,
   transactionId: number | string
 ): TransactionRecord | undefined {
-  return chargePoints.get(chargePointId)?.transactions.get(transactionId);
+  const cp = chargePoints.get(chargePointId);
+  if (!cp) return undefined;
+  return lookupTransaction(cp, transactionId);
 }
 
 /** Aktif (henüz endTime olmayan) transaction'ı connector için bulur. StatusNotification Available fallback için. */

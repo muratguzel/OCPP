@@ -1,7 +1,7 @@
 import { RPCServer } from 'ocpp-rpc';
 import {
   registerChargePoint,
-  unregisterChargePoint,
+  markChargePointOffline,
 } from '../store/chargePoints.js';
 import { registerClient, unregisterClient } from './clients.js';
 import { attachHandlers } from './handlers/index.js';
@@ -24,7 +24,10 @@ export function createOcppServer(port: number): RPCServer {
     console.log('[OCPP] Charge point connected:', id, protocol);
 
     client.on('close', () => {
-      unregisterChargePoint(id);
+      // Sadece RPC kanalını ve "online" işaretini kapat. Açık transaction'lar
+      // korunur; cihaz reconnect olduğunda queue'daki StopTransaction doğru
+      // transactionId'yi bulur ve oturum normal kapanır.
+      markChargePointOffline(id);
       unregisterClient(id);
       console.log('[OCPP] Charge point disconnected:', id);
     });
