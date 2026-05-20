@@ -1,4 +1,10 @@
 import PDFDocument from "pdfkit";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FONT_REGULAR = path.resolve(__dirname, "../../assets/fonts/Roboto-Regular.ttf");
+const FONT_BOLD = path.resolve(__dirname, "../../assets/fonts/Roboto-Bold.ttf");
 
 export interface ExportRow {
   startTime: Date;
@@ -28,9 +34,15 @@ export function buildReceiptPdf(data: ExportData): Promise<Buffer> {
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
 
-    doc.fontSize(18).text("Şarj Modül - Ödeme Fişi", { align: "center" });
+    // Register Turkish-capable Unicode fonts (Roboto). Default Helvetica is Type1
+    // and only supports WinAnsi, so characters like ı, ş, ğ, ü, ö, ç, ₺ get mangled.
+    doc.registerFont("Sans", FONT_REGULAR);
+    doc.registerFont("Sans-Bold", FONT_BOLD);
+    doc.font("Sans");
+
+    doc.fontSize(18).font("Sans-Bold").text("Şarj Modül - Ödeme Fişi", { align: "center" });
     doc.moveDown();
-    doc.fontSize(10).text(`Tarih Aralığı: ${data.startDate} - ${data.endDate}`);
+    doc.fontSize(10).font("Sans").text(`Tarih Aralığı: ${data.startDate} - ${data.endDate}`);
     doc.text(`Toplam Oturum: ${data.sessionCount}`);
     doc.text(`Toplam kWh: ${data.totalKwh.toFixed(2)}`);
     doc.text(`Toplam Tutar: ₺${data.totalCost.toFixed(2)}`);
@@ -40,7 +52,7 @@ export function buildReceiptPdf(data: ExportData): Promise<Buffer> {
     const colWidths = { date: 90, user: 80, numaraTaj: 70, cp: 60, kwh: 50, cost: 60 };
     const rowHeight = 20;
 
-    doc.fontSize(9).font("Helvetica-Bold");
+    doc.fontSize(9).font("Sans-Bold");
     doc.text("Tarih", 50, tableTop, { width: colWidths.date });
     doc.text("Kullanıcı", 50 + colWidths.date, tableTop, { width: colWidths.user });
     doc.text("Numarataj", 50 + colWidths.date + colWidths.user, tableTop, {
@@ -56,7 +68,7 @@ export function buildReceiptPdf(data: ExportData): Promise<Buffer> {
       width: colWidths.cost,
     });
 
-    doc.font("Helvetica");
+    doc.font("Sans");
 
     let y = tableTop + rowHeight;
     for (const row of data.rows) {
@@ -85,7 +97,7 @@ export function buildReceiptPdf(data: ExportData): Promise<Buffer> {
     }
 
     doc.moveDown(2);
-    doc.font("Helvetica-Bold").text(`Genel Toplam: ₺${data.totalCost.toFixed(2)}`);
+    doc.font("Sans-Bold").text(`Genel Toplam: ₺${data.totalCost.toFixed(2)}`);
     doc.text(`Toplam kWh: ${data.totalKwh.toFixed(2)}`);
 
     doc.end();

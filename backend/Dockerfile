@@ -22,6 +22,8 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY --from=build /app/dist ./dist
+# Non-JS assets (Unicode fonts for PDF export) — tsc doesn't copy them.
+COPY --from=build /app/src/assets ./dist/assets
 
 EXPOSE 3000
 CMD ["node", "dist/index.js"]
