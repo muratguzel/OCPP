@@ -54,8 +54,13 @@ services:
       SEED_EMAIL: admin@sarjmodul.com
       SEED_PASSWORD: Admin123!
       SEED_NAME: Super Admin
+    # Her container start'ında pending drizzle migration'larını uygula, sonra
+    # uygulamayı başlat. drizzle-kit migrate idempotent — pending kayıt yoksa
+    # no-op çalışır, her restart'ta güvenle koşar.
+    command: sh -c "npx drizzle-kit migrate && npx tsx src/index.ts"
     volumes:
       - ./backend/src:/app/src
+      - ./backend/drizzle:/app/drizzle
     depends_on:
       postgres:
         condition: service_healthy
