@@ -111,15 +111,34 @@ export async function getMe(): Promise<User> {
 
 export interface Transaction {
   id: string;
+  ocppTransactionId?: string | null;
   chargePointId: string;
   startTime: string;
   endTime?: string | null;
+  meterStart?: number | null;
+  meterStop?: number | null;
   kwh?: string | null;
   cost?: string | null;
 }
 
 export async function getTransactions(): Promise<Transaction[]> {
   return request<Transaction[]>('/transactions');
+}
+
+/**
+ * Backend (DB) source of truth: kullanıcının verilen CP'deki açık (endTime
+ * null) transaction'ını döndürür. Gateway memory'sinden çekilemediğinde
+ * (disconnect/reconnect, gateway restart) fallback olarak kullanılır.
+ */
+export async function getMyActiveTransaction(
+  chargePointId: string
+): Promise<Transaction | null> {
+  const all = await getTransactions();
+  const cpLower = chargePointId.toLowerCase();
+  const open = all.find(
+    (t) => !t.endTime && t.chargePointId.toLowerCase() === cpLower
+  );
+  return open ?? null;
 }
 
 export async function startCharge(params: {

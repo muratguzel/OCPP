@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLanguage } from '../contexts/LanguageContext';
 import { LanguageSelector } from '../components/LanguageSelector';
 import { getTransactions, getMeters } from '../api/ocppGateway';
-import { getChargePrice } from '../api/backendApi';
+import { getChargePrice, getMyActiveTransaction } from '../api/backendApi';
 import { parseEnergyKwh, parsePowerKw } from '../utils/meterParser';
 import { PRICE_PER_KWH } from '../constants/config';
 import type { MetersResponse } from '../api/ocppGateway';
@@ -75,27 +75,49 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
     return () => { cancelled = true; };
   }, [chargePointId]);
 
-  // Resolve active transaction
+  // Resolve active transaction.
+  // Önce gateway memory'sinden dene (canlı veri, in-flight meter values dahil).
+  // Memory boşsa (gateway restart veya CP geçici disconnect) backend'e (DB)
+  // fallback yap — orfan session'ları "No active transaction found" diye
+  // yanlış göstermemek için.
   useEffect(() => {
     let cancelled = false;
     setLoadingTx(true);
-    getTransactions(chargePointId)
-      .then((res) => {
+    setError(null);
+
+    (async () => {
+      try {
+        let active: { transactionId: number | string; startTime?: string } | null = null;
+        try {
+          const res = await getTransactions(chargePointId);
+          active =
+            (res.transactions || []).find((tx) => !tx.endTime) ?? null;
+        } catch {
+          // Gateway 404 veya network — backend fallback'e düş
+        }
+
+        if (!active) {
+          const dbTx = await getMyActiveTransaction(chargePointId).catch(() => null);
+          if (dbTx?.ocppTransactionId) {
+            active = {
+              transactionId: dbTx.ocppTransactionId,
+              startTime: dbTx.startTime,
+            };
+          }
+        }
+
         if (cancelled) return;
-        const active = (res.transactions || []).find((tx) => !tx.endTime);
         if (active) {
           setTransactionId(active.transactionId);
           if (active.startTime) setStartTime(new Date(active.startTime));
         } else {
           setError('No active transaction found');
         }
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err));
-      })
-      .finally(() => {
+      } finally {
         if (!cancelled) setLoadingTx(false);
-      });
+      }
+    })();
+
     return () => { cancelled = true; };
   }, [chargePointId]);
 
