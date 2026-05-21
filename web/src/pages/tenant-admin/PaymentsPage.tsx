@@ -35,6 +35,7 @@ type UserOption = {
   name: string
   email: string
   numaraTaj: string | null
+  licensePlate?: string | null
   isActive?: boolean
 }
 
@@ -49,11 +50,13 @@ export function PaymentsPage() {
   const [endDate, setEndDate] = useState(today)
   const [selectedUserId, setSelectedUserId] = useState('')
   const [selectedNumaraTaj, setSelectedNumaraTaj] = useState('')
+  const [selectedLicensePlate, setSelectedLicensePlate] = useState('')
   const [lastSearch, setLastSearch] = useState<{
     startDate: string
     endDate: string
     userId: string
     numaraTaj: string
+    licensePlate: string
     tenantId: string | undefined
   } | null>(null)
 
@@ -84,11 +87,30 @@ export function PaymentsPage() {
     return Array.from(set).sort()
   }, [userOptions])
 
+  const licensePlateOptions = useMemo(() => {
+    const set = new Set<string>()
+    userOptions.forEach((u) => {
+      if (u.licensePlate && u.licensePlate.trim()) set.add(u.licensePlate.trim())
+    })
+    return Array.from(set).sort()
+  }, [userOptions])
+
   const usersByNumaraTaj = useMemo(() => {
     const map = new Map<string, UserOption[]>()
     userOptions.forEach((u) => {
       if (!u.numaraTaj || !u.numaraTaj.trim()) return
       const key = u.numaraTaj.trim()
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(u as UserOption)
+    })
+    return map
+  }, [userOptions])
+
+  const usersByLicensePlate = useMemo(() => {
+    const map = new Map<string, UserOption[]>()
+    userOptions.forEach((u) => {
+      if (!u.licensePlate || !u.licensePlate.trim()) return
+      const key = u.licensePlate.trim()
       if (!map.has(key)) map.set(key, [])
       map.get(key)!.push(u as UserOption)
     })
@@ -101,6 +123,7 @@ export function PaymentsPage() {
       setSelectedUserId(id)
       const u = userOptions.find((x) => x.id === id)
       setSelectedNumaraTaj(u?.numaraTaj?.trim() ?? '')
+      setSelectedLicensePlate(u?.licensePlate?.trim() ?? '')
     },
     [userOptions]
   )
@@ -112,11 +135,29 @@ export function PaymentsPage() {
       const list = value ? usersByNumaraTaj.get(value) ?? [] : []
       if (list.length === 1) {
         setSelectedUserId(list[0].id)
+        setSelectedLicensePlate(list[0].licensePlate?.trim() ?? '')
       } else {
         setSelectedUserId('')
+        setSelectedLicensePlate('')
       }
     },
     [usersByNumaraTaj]
+  )
+
+  const handleLicensePlateChange = useCallback(
+    (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const value = e.target.value
+      setSelectedLicensePlate(value)
+      const list = value ? usersByLicensePlate.get(value) ?? [] : []
+      if (list.length === 1) {
+        setSelectedUserId(list[0].id)
+        setSelectedNumaraTaj(list[0].numaraTaj?.trim() ?? '')
+      } else {
+        setSelectedUserId('')
+        setSelectedNumaraTaj('')
+      }
+    },
+    [usersByLicensePlate]
   )
 
   const {
@@ -135,6 +176,7 @@ export function PaymentsPage() {
       if (lastSearch.tenantId) p.set('tenantId', lastSearch.tenantId)
       if (lastSearch.userId) p.set('userId', lastSearch.userId)
       if (lastSearch.numaraTaj) p.set('numaraTaj', lastSearch.numaraTaj)
+      if (lastSearch.licensePlate) p.set('licensePlate', lastSearch.licensePlate)
       return api
         .get<{
           totalCost: number
@@ -160,6 +202,7 @@ export function PaymentsPage() {
       endDate,
       userId: selectedUserId,
       numaraTaj: selectedNumaraTaj,
+      licensePlate: selectedLicensePlate,
       tenantId: effectiveTenantId ?? undefined,
     })
   }
@@ -173,6 +216,7 @@ export function PaymentsPage() {
         if (lastSearch.tenantId) p.set('tenantId', lastSearch.tenantId)
         if (lastSearch.userId) p.set('userId', lastSearch.userId)
         if (lastSearch.numaraTaj) p.set('numaraTaj', lastSearch.numaraTaj)
+        if (lastSearch.licensePlate) p.set('licensePlate', lastSearch.licensePlate)
         return p
       })()
     : null
@@ -214,7 +258,7 @@ export function PaymentsPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
             <div className="space-y-2">
               <Label htmlFor="startDate">Başlangıç Tarihi</Label>
               <Input
@@ -261,6 +305,22 @@ export function PaymentsPage() {
                 {numaraTajOptions.map((nt) => (
                   <option key={nt} value={nt}>
                     {nt}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="licensePlate">Plaka</Label>
+              <select
+                id="licensePlate"
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                value={selectedLicensePlate}
+                onChange={handleLicensePlateChange}
+              >
+                <option value="">Tümü</option>
+                {licensePlateOptions.map((lp) => (
+                  <option key={lp} value={lp}>
+                    {lp}
                   </option>
                 ))}
               </select>

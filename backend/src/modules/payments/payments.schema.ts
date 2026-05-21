@@ -6,6 +6,7 @@ export const paymentsSummarySchema = z.object({
   tenantId: z.string().uuid().optional(),
   userId: z.string().uuid().optional(),
   numaraTaj: z.string().max(255).optional(),
+  licensePlate: z.string().max(20).optional(),
 });
 
 export type PaymentsSummaryInput = z.infer<typeof paymentsSummarySchema>;

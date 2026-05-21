@@ -43,9 +43,10 @@ export async function getPaymentsSummary(
 
   const whereClause = and(...conditions);
 
-  const withJoin = input.numaraTaj
-    ? and(whereClause, eq(users.numaraTaj, input.numaraTaj))
-    : whereClause;
+  const joinFilters = [whereClause];
+  if (input.numaraTaj) joinFilters.push(eq(users.numaraTaj, input.numaraTaj));
+  if (input.licensePlate) joinFilters.push(eq(users.licensePlate, input.licensePlate));
+  const withJoin = joinFilters.length > 1 ? and(...joinFilters) : whereClause;
 
   const [summary] = await db
     .select({
@@ -179,9 +180,10 @@ export async function getPaymentsExportData(
     conditions.push(eq(transactions.userId, input.userId));
   }
   const whereClause = and(...conditions);
-  const withJoin = input.numaraTaj
-    ? and(whereClause, eq(users.numaraTaj, input.numaraTaj))
-    : whereClause;
+  const joinFilters = [whereClause];
+  if (input.numaraTaj) joinFilters.push(eq(users.numaraTaj, input.numaraTaj));
+  if (input.licensePlate) joinFilters.push(eq(users.licensePlate, input.licensePlate));
+  const withJoin = joinFilters.length > 1 ? and(...joinFilters) : whereClause;
 
   const rawRows = await db
     .select({
