@@ -55,7 +55,7 @@ export const ChargingActiveStackScreen: React.FC = () => {
       navigatedRef.current = true;
       (navigation as unknown as { navigate: (a: string, b: object) => void }).navigate(
         'ChargingSummary',
-        { chargingData: stopData.chargingData }
+        { chargingData: stopData.chargingData, transactionId: stopData.transactionId }
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -71,7 +71,10 @@ export const ChargingActiveStackScreen: React.FC = () => {
 
   // Charger ended the session on its own (cable unplug, RFID, etc.).
   // Skip the stop API call (gateway already closed the transaction) and the confirm modal.
-  const handleChargingEnded = async (data: ChargingData) => {
+  const handleChargingEnded = async (
+    data: ChargingData,
+    transactionId: number | string | null
+  ) => {
     if (navigatedRef.current) return;
     navigatedRef.current = true;
     setShowEndModal(false);
@@ -79,7 +82,7 @@ export const ChargingActiveStackScreen: React.FC = () => {
     await AsyncStorage.removeItem(STORAGE_KEYS.ACTIVE_CHARGE_POINT_ID);
     (navigation as unknown as { navigate: (a: string, b: object) => void }).navigate(
       'ChargingSummary',
-      { chargingData: data }
+      { chargingData: data, transactionId: transactionId ?? undefined }
     );
   };
 

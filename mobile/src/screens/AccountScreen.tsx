@@ -48,6 +48,13 @@ export const AccountScreen: React.FC = () => {
           <Row label={t('role')} value={roleLabel} last />
         </View>
 
+        <TouchableOpacity
+          style={styles.usageButton}
+          onPress={() => (navigation as unknown as { navigate: (n: string) => void }).navigate('Usage')}
+          activeOpacity={0.85}
+        >
+          <Text style={styles.usageButtonText}>📊  {t('usage')}</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={styles.logoutButton} onPress={() => logout()} activeOpacity={0.85}>
           <Text style={styles.logoutText}>{t('logout')}</Text>
         </TouchableOpacity>
@@ -135,6 +142,17 @@ const styles = StyleSheet.create({
   rowLabel: { color: '#9ca3af', fontSize: 14 },
   rowValue: { color: '#fff', fontSize: 16, fontWeight: '600', flexShrink: 1, textAlign: 'right' },
   rowValueHighlight: { color: '#22d3ee' },
+  usageButton: {
+    width: '100%',
+    paddingVertical: 16,
+    borderRadius: 16,
+    backgroundColor: 'rgba(34, 211, 238, 0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(34, 211, 238, 0.4)',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  usageButtonText: { color: '#22d3ee', fontSize: 16, fontWeight: '600' },
   logoutButton: {
     width: '100%',
     paddingVertical: 16,

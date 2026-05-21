@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator, Text, StyleSheet as RNStyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
@@ -43,13 +43,21 @@ function AppNavigator() {
   const [activeChargePointId, setActiveChargePointId] = useState<string | null | undefined>(
     undefined
   );
+  // Guard against re-resolving on every isAuthenticated re-render. Otherwise
+  // a token refresh or auth-context re-render after starting a new charge would
+  // call getTransactions(); backend eventual consistency may briefly return an
+  // empty list, clearing AsyncStorage and resetting the Stack to QR mid-flow.
+  const resolvedRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
     if (!isAuthenticated) {
+      resolvedRef.current = false;
       setActiveChargePointId(null);
       return;
     }
+    if (resolvedRef.current) return;
+    resolvedRef.current = true;
     setActiveChargePointId(undefined);
     resolveActiveChargePointId()
       .then((id) => { if (!cancelled) setActiveChargePointId(id); })
@@ -74,7 +82,7 @@ function AppNavigator() {
 
   return (
     <Stack.Navigator
-      key={`${isAuthenticated ? 'auth' : 'guest'}-${activeChargePointId ?? 'none'}`}
+      key={isAuthenticated ? 'auth' : 'guest'}
       initialRouteName={initialRoute}
       screenOptions={{
         headerShown: false,

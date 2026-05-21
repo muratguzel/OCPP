@@ -23,6 +23,29 @@ export async function getPaymentsSummary(
   }
 }
 
+export async function getMyReceiptPdf(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const ocppTransactionId = String(req.params.transactionId);
+    const data = await paymentsService.getReceiptDataForTransaction(
+      req.user!.role as Role,
+      req.user!.userId,
+      req.user!.tenantId ?? undefined,
+      ocppTransactionId
+    );
+    const pdf = await buildReceiptPdf(data);
+    const filename = `fis-${ocppTransactionId}.pdf`;
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(pdf);
+  } catch (err) {
+    next(err);
+  }
+}
+
 export async function getPaymentsPdf(
   req: Request,
   res: Response,

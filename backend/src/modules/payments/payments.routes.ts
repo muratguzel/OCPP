@@ -23,4 +23,8 @@ router.get(
   paymentsController.getPaymentsPdf
 );
 
+// Tek-transaction fiş indirme (mobile "Fişi İndir"). Owner kontrolü
+// service katmanında: user role sadece kendi transaction'ını çekebilir.
+router.get("/receipt/:transactionId", paymentsController.getMyReceiptPdf);
+
 export default router;

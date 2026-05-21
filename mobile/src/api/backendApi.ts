@@ -179,6 +179,36 @@ export async function getChargePrice(chargePointId: string): Promise<ChargePrice
   );
 }
 
+/**
+ * Tek-transaction PDF fişini indirir, lokal cache'e kaydeder ve dosya URI'sını
+ * döndürür. Caller `Sharing.shareAsync(uri)` ile sistem share sheet'i açabilir.
+ * Lazy import: eski native binary'lerde (OTA güncellemesi binary'i eski iken)
+ * expo-file-system yoksa app start'ta crash olmasın.
+ */
+export async function downloadReceiptPdf(
+  transactionId: number | string
+): Promise<string> {
+  const { File, Paths } = await import('expo-file-system');
+  const accessToken = await AsyncStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
+  if (!accessToken) throw new Error('Not authenticated');
+  const url = `${BACKEND_API_URL}/api/payments/receipt/${encodeURIComponent(
+    String(transactionId)
+  )}`;
+  const res = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  if (!res.ok) {
+    throw new Error(`Receipt download failed (HTTP ${res.status})`);
+  }
+  const buf = await res.arrayBuffer();
+  const safeId = String(transactionId).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const file = new File(Paths.cache, `receipt-${safeId}.pdf`);
+  if (file.exists) file.delete();
+  file.create();
+  file.write(new Uint8Array(buf));
+  return file.uri;
+}
+
 async function saveAuth(data: LoginResponse): Promise<void> {
   await AsyncStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.accessToken);
   await AsyncStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.refreshToken);

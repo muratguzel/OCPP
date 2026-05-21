@@ -5,7 +5,7 @@ export type RootStackParamList = {
   QR: undefined;
   ChargingStart: { chargePointId?: string; chargePointName?: string };
   ChargingActive: { chargePointId: string };
-  ChargingSummary: { chargingData: ChargingData };
+  ChargingSummary: { chargingData: ChargingData; transactionId?: number | string };
   Usage: undefined;
   Account: undefined;
   PrivacyPolicy: undefined;

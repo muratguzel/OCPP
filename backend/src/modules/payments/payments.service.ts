@@ -88,6 +88,67 @@ export async function getPaymentsSummary(
   };
 }
 
+/**
+ * Tek bir transaction için fiş verisi. Mobile "Fişi İndir" akışı bunu çağırır.
+ * Owner kontrolü: user role ise sadece kendi transaction'ı; admin/super_admin
+ * ise tenant kapsamında her transaction.
+ */
+export async function getReceiptDataForTransaction(
+  requesterRole: Role,
+  requesterUserId: string,
+  requesterTenantId: string | undefined,
+  ocppTransactionId: string
+) {
+  const conditions = [eq(transactions.ocppTransactionId, ocppTransactionId)];
+  if (requesterRole === "user") {
+    conditions.push(eq(transactions.userId, requesterUserId));
+  } else if (requesterRole === "admin") {
+    if (!requesterTenantId) throw new AppError(403, "Tenant context required");
+    conditions.push(eq(transactions.tenantId, requesterTenantId));
+  }
+
+  const [row] = await db
+    .select({
+      id: transactions.id,
+      startTime: transactions.startTime,
+      endTime: transactions.endTime,
+      chargePointId: transactions.chargePointId,
+      kwh: transactions.kwh,
+      cost: transactions.cost,
+      userName: users.name,
+      numaraTaj: users.numaraTaj,
+    })
+    .from(transactions)
+    .leftJoin(users, eq(transactions.userId, users.id))
+    .where(and(...conditions))
+    .limit(1);
+
+  if (!row) throw new AppError(404, "Transaction not found");
+
+  const kwh = row.kwh ? parseFloat(row.kwh) : 0;
+  const cost = row.cost ? parseFloat(row.cost) : 0;
+  const fmt = (d: Date) => d.toISOString().slice(0, 10);
+
+  return {
+    startDate: fmt(row.startTime),
+    endDate: fmt(row.endTime ?? row.startTime),
+    totalCost: cost,
+    totalKwh: kwh,
+    sessionCount: 1,
+    rows: [
+      {
+        startTime: row.startTime,
+        endTime: row.endTime,
+        chargePointId: row.chargePointId,
+        kwh,
+        cost,
+        userName: row.userName ?? "-",
+        numaraTaj: row.numaraTaj ?? "-",
+      },
+    ],
+  };
+}
+
 export async function getPaymentsExportData(
   requesterRole: Role,
   requesterTenantId: string | undefined,

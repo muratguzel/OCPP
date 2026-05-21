@@ -57,7 +57,7 @@ ssh $SERVER_USER@$SERVER_IP << EOF
     docker load < $IMAGES_FILE
     rm $IMAGES_FILE
     echo "Starting containers..."
-    docker compose up -d
+    docker compose -f docker-compose.prod.yml up -d
     echo "✅ Server is up!"
 EOF
 

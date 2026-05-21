@@ -34,11 +34,13 @@ function parseQRData(data: string): QRPayload | null {
 
 export const QRScannerScreen: React.FC = () => {
   const { t } = useLanguage();
-  const { logout } = useAuth();
+  const { user } = useAuth();
   const navigation = useNavigation<Nav>();
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
+
+  const initial = (user?.name ?? user?.email ?? '?').trim().charAt(0).toUpperCase();
 
   const handleBarCodeScanned = useCallback(
     ({ data }: { type: string; data: string }) => {
@@ -74,12 +76,16 @@ export const QRScannerScreen: React.FC = () => {
     return (
       <LinearGradient colors={['#000000', '#111827', '#000000']} style={styles.gradient}>
         <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-          <View style={styles.backButton} />
           <View style={styles.headerRight}>
-            <TouchableOpacity onPress={() => logout()} style={styles.logoutButton}>
-              <Text style={styles.logoutButtonText}>{t('logout')}</Text>
-            </TouchableOpacity>
             <LanguageSelector />
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Account')}
+              style={styles.avatarButton}
+              accessibilityLabel={t('account')}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.avatarText}>{initial}</Text>
+            </TouchableOpacity>
           </View>
         </View>
         <View style={styles.content}>
@@ -101,29 +107,16 @@ export const QRScannerScreen: React.FC = () => {
       style={styles.gradient}
     >
       <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
-        </TouchableOpacity>
         <View style={styles.headerRight}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('Usage')}
-            style={styles.usageButton}
-          >
-            <Text style={styles.usageButtonText}>{t('usage')}</Text>
-          </TouchableOpacity>
+          <LanguageSelector />
           <TouchableOpacity
             onPress={() => navigation.navigate('Account')}
-            style={styles.accountButton}
+            style={styles.avatarButton}
+            accessibilityLabel={t('account')}
+            activeOpacity={0.85}
           >
-            <Text style={styles.accountButtonText}>{t('account')}</Text>
+            <Text style={styles.avatarText}>{initial}</Text>
           </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => logout()}
-            style={styles.logoutButton}
-          >
-            <Text style={styles.logoutButtonText}>{t('logout')}</Text>
-          </TouchableOpacity>
-          <LanguageSelector />
         </View>
       </View>
       <View style={styles.content}>
@@ -178,33 +171,23 @@ const styles = StyleSheet.create({
   loadingText: { color: '#9ca3af' },
   header: {
     paddingHorizontal: 24,
-    paddingBottom: 24,
+    paddingBottom: 16,
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
   },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  usageButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: 'rgba(34, 211, 238, 0.2)',
-    borderRadius: 10,
-  },
-  usageButtonText: { color: '#22d3ee', fontWeight: '600', fontSize: 14 },
-  accountButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  avatarButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(168, 85, 247, 0.2)',
-    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(192, 132, 252, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  accountButtonText: { color: '#c084fc', fontWeight: '600', fontSize: 14 },
-  logoutButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    backgroundColor: 'rgba(239, 68, 68, 0.2)',
-    borderRadius: 10,
-  },
-  logoutButtonText: { color: '#f87171', fontWeight: '600', fontSize: 14 },
+  avatarText: { color: '#c084fc', fontWeight: '700', fontSize: 16 },
   backButton: {
     width: 44,
     height: 44,

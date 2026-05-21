@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { StatusBadge } from '@/components/StatusBadge'
-import { Plus, Pencil, Trash2, Play, Square } from 'lucide-react'
+import { Plus, Pencil, Trash2, Square } from 'lucide-react'
 import { toast } from 'sonner'
 
 interface GatewayCP {
@@ -80,19 +80,6 @@ export function ChargePointsPage() {
       cp,
     ])
   )
-
-  const handleStartCharge = async (cpId: string, chargePointId: string) => {
-    setActionPendingId(cpId)
-    try {
-      await api.post('/charge/start', { chargePointId })
-      toast.success('Şarj komutu gönderildi')
-      queryClient.invalidateQueries({ queryKey: ['ocpp-gateway-status'] })
-    } catch (err: unknown) {
-      toast.error((err as any)?.response?.data?.error ?? 'Şarj başlatılamadı')
-    } finally {
-      setActionPendingId(null)
-    }
-  }
 
   const handleStopCharge = async (cpId: string, gatewayChargePointId: string) => {
     setActionPendingId(cpId)
@@ -180,19 +167,6 @@ export function ChargePointsPage() {
                   </p>
                   {isOnline && gatewayApi && (
                     <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
-                      {!connectors.some((c) => CHARGING_STATUSES.includes(c.status?.toLowerCase() ?? '')) &&
-                       !connectors.some((c) => c.status?.toLowerCase() === 'preparing') &&
-                       connectors.some((c) => c.status?.toLowerCase() === 'available') && (
-                        <Button
-                          size="sm"
-                          className="h-8 gap-1.5"
-                          onClick={() => handleStartCharge(cp.id, cp.chargePointId)}
-                          disabled={actionPendingId === cp.id}
-                        >
-                          <Play className="h-3.5 w-3.5" />
-                          {actionPendingId === cp.id ? 'Gönderiliyor...' : 'Şarj Başlat'}
-                        </Button>
-                      )}
                       {connectors.some((c) => CHARGING_STATUSES.includes(c.status?.toLowerCase() ?? '')) && (
                         <Button
                           size="sm"

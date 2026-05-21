@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
+  Animated,
+  Easing,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -29,7 +31,7 @@ const POLL_INTERVAL_MS = 5000;
 interface ChargingActiveScreenProps {
   chargePointId: string;
   onStopCharging: (data: ChargingData, transactionId: number | string) => void;
-  onChargingEnded?: (data: ChargingData) => void;
+  onChargingEnded?: (data: ChargingData, transactionId: number | string | null) => void;
 }
 
 export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
@@ -55,6 +57,87 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Charging "alive" animations: battery fill rising + bolt flicker + shimmer line.
+  const fillAnim = useRef(new Animated.Value(0)).current;
+  const boltScale = useRef(new Animated.Value(1)).current;
+  const boltOpacity = useRef(new Animated.Value(1)).current;
+  const shimmerAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const fill = Animated.loop(
+      Animated.sequence([
+        Animated.timing(fillAnim, {
+          toValue: 1,
+          duration: 2800,
+          easing: Easing.inOut(Easing.cubic),
+          useNativeDriver: false,
+        }),
+        Animated.timing(fillAnim, {
+          toValue: 0,
+          duration: 400,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: false,
+        }),
+      ])
+    );
+    // Subtle scale breathing on the bolt
+    const scale = Animated.loop(
+      Animated.sequence([
+        Animated.timing(boltScale, {
+          toValue: 1.12,
+          duration: 650,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(boltScale, {
+          toValue: 1,
+          duration: 650,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    // Electric flicker on the bolt — short opacity dips, asymmetric so it feels live.
+    const flicker = Animated.loop(
+      Animated.sequence([
+        Animated.timing(boltOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+        Animated.timing(boltOpacity, { toValue: 0.55, duration: 80, useNativeDriver: true }),
+        Animated.timing(boltOpacity, { toValue: 1, duration: 120, useNativeDriver: true }),
+        Animated.timing(boltOpacity, { toValue: 1, duration: 900, useNativeDriver: true }),
+        Animated.timing(boltOpacity, { toValue: 0.7, duration: 60, useNativeDriver: true }),
+        Animated.timing(boltOpacity, { toValue: 1, duration: 140, useNativeDriver: true }),
+      ])
+    );
+    // Shimmer line sweeping across the fill top — current-flow feel
+    const shimmer = Animated.loop(
+      Animated.timing(shimmerAnim, {
+        toValue: 1,
+        duration: 1600,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    );
+    fill.start();
+    scale.start();
+    flicker.start();
+    shimmer.start();
+    return () => {
+      fill.stop();
+      scale.stop();
+      flicker.stop();
+      shimmer.stop();
+    };
+  }, [fillAnim, boltScale, boltOpacity, shimmerAnim]);
+
+  const fillHeight = fillAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+  const shimmerTranslate = shimmerAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [-80, 80],
+  });
 
   // Fetch tenant price for this charge point (for accurate cost display)
   useEffect(() => {
@@ -88,21 +171,31 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
     (async () => {
       try {
         let active: { transactionId: number | string; startTime?: string } | null = null;
-        try {
-          const res = await getTransactions(chargePointId);
-          active =
-            (res.transactions || []).find((tx) => !tx.endTime) ?? null;
-        } catch {
-          // Gateway 404 veya network — backend fallback'e düş
-        }
+        // Eventual consistency: yeni başlatılan transaction OCPP gateway memory →
+        // backend DB cascade'i için kısa grace period. İlk dene boş gelirse 1.5s
+        // bekle, bir kez daha dene.
+        for (let attempt = 0; attempt < 2 && !active; attempt++) {
+          if (attempt > 0) {
+            await new Promise((r) => setTimeout(r, 1500));
+            if (cancelled) return;
+          }
+          try {
+            const res = await getTransactions(chargePointId);
+            if (cancelled) return;
+            active = (res.transactions || []).find((tx) => !tx.endTime) ?? null;
+          } catch {
+            // Gateway 404 veya network — backend fallback'e düş
+          }
 
-        if (!active) {
-          const dbTx = await getMyActiveTransaction(chargePointId).catch(() => null);
-          if (dbTx?.ocppTransactionId) {
-            active = {
-              transactionId: dbTx.ocppTransactionId,
-              startTime: dbTx.startTime,
-            };
+          if (!active) {
+            const dbTx = await getMyActiveTransaction(chargePointId).catch(() => null);
+            if (cancelled) return;
+            if (dbTx?.ocppTransactionId) {
+              active = {
+                transactionId: dbTx.ocppTransactionId,
+                startTime: dbTx.startTime,
+              };
+            }
           }
         }
 
@@ -150,12 +243,15 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
     if (endedRef.current) return;
     if (meters?.meterStop == null) return;
     endedRef.current = true;
-    onChargingEnded?.({
-      duration: durationSeconds,
-      energyUsed: energyKwh,
-      cost,
-      startTime,
-    });
+    onChargingEnded?.(
+      {
+        duration: durationSeconds,
+        energyUsed: energyKwh,
+        cost,
+        startTime,
+      },
+      transactionId
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [meters?.meterStop]);
 
@@ -208,8 +304,40 @@ export const ChargingActiveScreen: React.FC<ChargingActiveScreenProps> = ({
         <LanguageSelector />
       </View>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.iconCircle}>
-          <Text style={styles.iconText}>⚡</Text>
+        <View style={styles.chargingVisual}>
+          <View style={styles.battery}>
+            <View style={styles.batteryCap} />
+            <View style={styles.batteryBody}>
+              <Animated.View style={[styles.batteryFill, { height: fillHeight }]}>
+                <LinearGradient
+                  colors={['#34d399', '#10b981', '#059669']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 0, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                {/* Top highlight on the fill — looks like a liquid surface */}
+                <View style={styles.fillTopHighlight} />
+                {/* Shimmer line sweeping horizontally — current-flow feel */}
+                <Animated.View
+                  style={[
+                    styles.fillShimmer,
+                    { transform: [{ translateX: shimmerTranslate }] },
+                  ]}
+                />
+              </Animated.View>
+              <Animated.Text
+                style={[
+                  styles.batteryBolt,
+                  {
+                    transform: [{ scale: boltScale }],
+                    opacity: boltOpacity,
+                  },
+                ]}
+              >
+                ⚡
+              </Animated.Text>
+            </View>
+          </View>
         </View>
         <Text style={styles.title}>{t('charging')}</Text>
         <View style={styles.metrics}>
@@ -291,7 +419,74 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   iconText: { fontSize: 56 },
-  title: { fontSize: 28, fontWeight: '700', color: '#fff', marginBottom: 32 },
+  chargingVisual: {
+    width: 160,
+    height: 180,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  battery: {
+    width: 96,
+    height: 160,
+    alignItems: 'center',
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 22,
+    elevation: 12,
+  },
+  batteryCap: {
+    width: 34,
+    height: 10,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+    backgroundColor: '#e5e7eb',
+    marginBottom: -2,
+    zIndex: 1,
+  },
+  batteryBody: {
+    flex: 1,
+    width: '100%',
+    borderRadius: 18,
+    borderWidth: 3,
+    borderColor: '#e5e7eb',
+    backgroundColor: 'rgba(17, 24, 39, 0.85)',
+    overflow: 'hidden',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  batteryFill: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    overflow: 'hidden',
+  },
+  fillTopHighlight: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.35)',
+  },
+  fillShimmer: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    transform: [{ skewX: '-20deg' }],
+  },
+  batteryBolt: {
+    fontSize: 52,
+    textShadowColor: 'rgba(253, 224, 71, 0.9)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 14,
+    zIndex: 2,
+  },
+  title: { fontSize: 24, fontWeight: '700', color: '#fff', marginBottom: 24 },
   metrics: { width: '100%', maxWidth: 360, marginBottom: 32
     
    },
