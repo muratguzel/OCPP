@@ -26,6 +26,14 @@ export interface ExportRow {
   cost: number;
   userName: string;
   numaraTaj: string;
+  licensePlate?: string;
+}
+
+// Türkiye saatine çevirip "YYYY-MM-DD HH:mm" döner.
+// Türkiye 2016'dan beri sabit UTC+3 (DST yok), bu yüzden manuel +3 saat güvenli.
+function formatTrDateTime(d: Date): string {
+  const tr = new Date(d.getTime() + 3 * 60 * 60 * 1000);
+  return tr.toISOString().slice(0, 16).replace("T", " ");
 }
 
 export interface ExportData {
@@ -63,24 +71,26 @@ export function buildReceiptPdf(data: ExportData): Promise<Buffer> {
     doc.moveDown();
 
     const tableTop = doc.y;
-    const colWidths = { date: 90, user: 80, numaraTaj: 70, cp: 60, kwh: 50, cost: 60 };
+    const colWidths = { date: 78, user: 70, numaraTaj: 50, plate: 60, cp: 55, kwh: 42, cost: 50 };
+    const colX = {
+      date: 50,
+      user: 50 + colWidths.date,
+      numaraTaj: 50 + colWidths.date + colWidths.user,
+      plate: 50 + colWidths.date + colWidths.user + colWidths.numaraTaj,
+      cp: 50 + colWidths.date + colWidths.user + colWidths.numaraTaj + colWidths.plate,
+      kwh: 50 + colWidths.date + colWidths.user + colWidths.numaraTaj + colWidths.plate + colWidths.cp,
+      cost: 50 + colWidths.date + colWidths.user + colWidths.numaraTaj + colWidths.plate + colWidths.cp + colWidths.kwh,
+    };
     const rowHeight = 20;
 
     doc.fontSize(9).font(FONT_SANS_BOLD);
-    doc.text("Tarih", 50, tableTop, { width: colWidths.date });
-    doc.text("Kullanıcı", 50 + colWidths.date, tableTop, { width: colWidths.user });
-    doc.text("Numarataj", 50 + colWidths.date + colWidths.user, tableTop, {
-      width: colWidths.numaraTaj,
-    });
-    doc.text("İstasyon", 50 + colWidths.date + colWidths.user + colWidths.numaraTaj, tableTop, {
-      width: colWidths.cp,
-    });
-    doc.text("kWh", 50 + colWidths.date + colWidths.user + colWidths.numaraTaj + colWidths.cp, tableTop, {
-      width: colWidths.kwh,
-    });
-    doc.text("Tutar", 50 + colWidths.date + colWidths.user + colWidths.numaraTaj + colWidths.cp + colWidths.kwh, tableTop, {
-      width: colWidths.cost,
-    });
+    doc.text("Tarih", colX.date, tableTop, { width: colWidths.date });
+    doc.text("Kullanıcı", colX.user, tableTop, { width: colWidths.user });
+    doc.text("Numarataj", colX.numaraTaj, tableTop, { width: colWidths.numaraTaj });
+    doc.text("Plaka", colX.plate, tableTop, { width: colWidths.plate });
+    doc.text("İstasyon", colX.cp, tableTop, { width: colWidths.cp });
+    doc.text("kWh", colX.kwh, tableTop, { width: colWidths.kwh });
+    doc.text("Tutar", colX.cost, tableTop, { width: colWidths.cost });
 
     doc.font(FONT_SANS);
 
@@ -90,23 +100,13 @@ export function buildReceiptPdf(data: ExportData): Promise<Buffer> {
         doc.addPage();
         y = 50;
       }
-      const startStr = row.startTime.toISOString().slice(0, 16).replace("T", " ");
-      doc.text(startStr, 50, y, { width: colWidths.date });
-      doc.text(row.userName.slice(0, 12), 50 + colWidths.date, y, {
-        width: colWidths.user,
-      });
-      doc.text(row.numaraTaj, 50 + colWidths.date + colWidths.user, y, {
-        width: colWidths.numaraTaj,
-      });
-      doc.text(row.chargePointId, 50 + colWidths.date + colWidths.user + colWidths.numaraTaj, y, {
-        width: colWidths.cp,
-      });
-      doc.text(row.kwh.toFixed(2), 50 + colWidths.date + colWidths.user + colWidths.numaraTaj + colWidths.cp, y, {
-        width: colWidths.kwh,
-      });
-      doc.text(`₺${row.cost.toFixed(2)}`, 50 + colWidths.date + colWidths.user + colWidths.numaraTaj + colWidths.cp + colWidths.kwh, y, {
-        width: colWidths.cost,
-      });
+      doc.text(formatTrDateTime(row.startTime), colX.date, y, { width: colWidths.date });
+      doc.text(row.userName.slice(0, 12), colX.user, y, { width: colWidths.user });
+      doc.text(row.numaraTaj, colX.numaraTaj, y, { width: colWidths.numaraTaj });
+      doc.text(row.licensePlate || "-", colX.plate, y, { width: colWidths.plate });
+      doc.text(row.chargePointId, colX.cp, y, { width: colWidths.cp });
+      doc.text(row.kwh.toFixed(2), colX.kwh, y, { width: colWidths.kwh });
+      doc.text(`₺${row.cost.toFixed(2)}`, colX.cost, y, { width: colWidths.cost });
       y += rowHeight;
     }
 

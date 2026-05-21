@@ -117,6 +117,7 @@ export async function getReceiptDataForTransaction(
       cost: transactions.cost,
       userName: users.name,
       numaraTaj: users.numaraTaj,
+      licensePlate: users.licensePlate,
     })
     .from(transactions)
     .leftJoin(users, eq(transactions.userId, users.id))
@@ -144,6 +145,7 @@ export async function getReceiptDataForTransaction(
         cost,
         userName: row.userName ?? "-",
         numaraTaj: row.numaraTaj ?? "-",
+        licensePlate: row.licensePlate ?? "",
       },
     ],
   };
@@ -191,6 +193,7 @@ export async function getPaymentsExportData(
       cost: transactions.cost,
       userName: users.name,
       numaraTaj: users.numaraTaj,
+      licensePlate: users.licensePlate,
     })
     .from(transactions)
     .leftJoin(users, eq(transactions.userId, users.id))
@@ -205,6 +208,7 @@ export async function getPaymentsExportData(
       cost: r.cost ? parseFloat(r.cost) : 0,
       userName: r.userName ?? "-",
       numaraTaj: r.numaraTaj ?? "-",
+      licensePlate: r.licensePlate ?? "",
     }));
 
   return {
